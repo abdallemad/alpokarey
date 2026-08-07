@@ -1,0 +1,287 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  ADMIN
+}
+
+enum Status {
+  DRAFT
+  PUBLISHED
+}
+
+enum LessonType {
+  VIDEO
+  TEXT
+}
+
+enum AttachmentType {
+  FILE
+  TEXT
+}
+
+enum ContentType {
+  YOUTUBE
+  VIDEO
+}
+
+enum PathCategory {
+  FIQH
+  AQEEDA
+  LIFE_AFFAIRS
+  SEERAH
+  TAFSIR
+}
+
+model User {
+  id       String   @id @default(uuid())
+  clerkId  String   @unique
+  email    String   @unique
+  name     String?
+  imageUrl String?
+  role     UserRole @default(STUDENT)
+
+  enrollments    Enrollment[]
+  lessonProgress LessonProgress[]
+  quizAttempts   QuizAttempt[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  certificates Certificate[]
+}
+
+model Path {
+  id                     String        @id @default(uuid())
+  title                  String
+  description            String?       @db.Text
+  imageUrl               String?
+  isFeatured             Boolean       @default(false)
+  certificationActivated Boolean       @default(false)
+  status                 Status        @default(DRAFT)
+  category               PathCategory?
+
+  stages      Stage[]
+  enrollments Enrollment[]
+
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  certificates           Certificate[]
+  cloudinaryAttachmentId String?
+  cloudinaryAttachment   CloudinaryAttachment? @relation(fields: [cloudinaryAttachmentId], references: [id])
+  promoUrl               String?
+}
+
+model Stage {
+  id    String @id @default(uuid())
+  title String
+  order Int
+
+  pathId String
+  path   Path   @relation(fields: [pathId], references: [id], onDelete: Cascade)
+
+  lessons Lesson[]
+  quizzes Quiz[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Lesson {
+  id          String      @id @default(uuid())
+  title       String
+  description String?     @db.Text
+  type        LessonType  @default(VIDEO)
+  videoUrl    String?
+  contentType ContentType @default(YOUTUBE)
+  content     String?     @db.Text
+  duration    String?
+  order       Int
+
+  cloudinaryResource CloudinaryResource?
+  stageId            String
+  stage              Stage               @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  quizId String?
+  quiz   Quiz?   @relation(fields: [quizId], references: [id])
+
+  attachments Attachment[]
+  progress    LessonProgress[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Quiz {
+  id           String  @id @default(uuid())
+  title        String
+  description  String? @db.Text
+  passingScore Int     @default(70)
+  duration     String?
+  order        Int
+
+  stageId String
+  stage   Stage  @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  lessons   Lesson[]
+  questions Question[]
+  attempts  QuizAttempt[]
+  isFinal   Boolean       @default(false)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  active    Boolean       @default(false)
+}
+
+model Question {
+  id     String @id @default(uuid())
+  text   String
+  quizId String
+  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  options       Option[]
+  correctAnswer String // ID of the correct option
+
+  answers QuizAnswer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Option {
+  id         String   @id @default(uuid())
+  text       String
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  isCorrect  Boolean  @default(false)
+
+  answers QuizAnswer[]
+}
+
+model Enrollment {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  pathId String
+  path   Path   @relation(fields: [pathId], references: [id], onDelete: Cascade)
+
+  progress    Int     @default(0) // Overall progress in percentage
+  isCompleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, pathId])
+}
+
+model LessonProgress {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  isCompleted Boolean @default(false)
+
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([userId, lessonId])
+}
+
+model QuizAttempt {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  quizId String
+  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  score    Int
+  isPassed Boolean
+
+  answers QuizAnswer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model QuizAnswer {
+  id            String      @id @default(uuid())
+  quizAttemptId String
+  quizAttempt   QuizAttempt @relation(fields: [quizAttemptId], references: [id], onDelete: Cascade)
+
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  optionId String
+  option   Option @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([quizAttemptId, questionId])
+}
+
+model Certificate {
+  id       String   @id @default(uuid())
+  userId   String
+  pathId   String
+  issuedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  path Path @relation(fields: [pathId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pathId])
+}
+
+model Attachment {
+  id      String         @id @default(uuid())
+  name    String
+  type    AttachmentType
+  content String?        @db.Text
+  url     String?        @db.Text
+
+  cloudinaryPublicId     String?
+  cloudinaryAttachmentId String?
+
+  cloudinaryResource CloudinaryResource?
+
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CloudinaryResource {
+  id        String   @id @default(uuid())
+  url       String
+  publicId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lessonId String @unique
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  attachmentId String     @unique
+  attachment   Attachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+}
+
+model CloudinaryAttachment {
+  id        String   @id @default(uuid())
+  url       String
+  publicId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  path Path[]
+}
