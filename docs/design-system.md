@@ -683,24 +683,48 @@ function ThemeToggle() {
 
 ## 10. RTL Readiness
 
-### Current State
+### Current State — RTL is live
 
-The project is configured with `lang="ar"` and `dir="ltr"` in the root layout. When Arabic content becomes the primary interface language, switch to `dir="rtl"`.
+The root layout renders `lang="ar" dir="rtl"`, and `components.json` has
+`"rtl": true`. Arabic is the primary interface language.
 
-### shadcn RTL Support
+Full write-up: [`admin-dashboard.md`](./admin-dashboard.md) §9.
 
-The `components.json` has `"rtl": false`. When ready for RTL:
+### What was done
 
-1. Set `"rtl": true` in `components.json`
-2. Change `dir="ltr"` to `dir="rtl"` in `layout.tsx`
-3. Review all padding/margin utilities (Tailwind logical properties: `ps-*`, `pe-*`, `ms-*`, `me-*` instead of `pl-*`, `pr-*`, `ml-*`, `mr-*`)
-4. Run `npx shadcn migrate` if available for the RTL migration
+1. `dir="ltr"` → `dir="rtl"` in `src/app/layout.tsx`
+2. `"rtl": false` → `"rtl": true` in `components.json`
+3. Physical-direction classes in already-installed `components/ui/*` replaced
+   with logical ones (see the table below)
 
-### Recommendations
+> The `components.json` flag only affects components generated **from now on**.
+> It does not rewrite the 33 already installed — those were fixed by hand.
 
-- Use Tailwind logical properties (`start`/`end` vs `left`/`right`) from the start where possible
-- Both IBM Plex Sans Arabic and Amiri render beautifully in RTL
-- The sidebar component has built-in RTL support
+### Fixes applied to installed components
+
+| File | Change |
+|------|--------|
+| `sidebar.tsx` | `text-left`→`text-start`, `pr-8`→`pe-8`, `right-1/3`→`end-1/3`, `border-l`→`border-s`, `ml-0/ml-2`→`ms-0/ms-2`; trigger icon gets `rtl:rotate-180` |
+| `table.tsx` | `text-left`→`text-start`, `pr-0`→`pe-0` |
+| `select.tsx` | `text-left`→`text-start`, trigger and item padding to `ps-*/pe-*`, check indicator `right-2`→`end-2` |
+| `alert-dialog.tsx` | `sm:…text-left`→`text-start` |
+
+If you re-add any of these from the shadcn registry, re-apply the fixes or
+verify the generated output is already logical.
+
+### Rules for new code
+
+- **Always** use logical utilities: `ms-*`, `me-*`, `ps-*`, `pe-*`, `start-*`,
+  `end-*`, `border-s`, `border-e`, `text-start`, `text-end`. Never `ml-*`,
+  `pl-*`, `left-*`, `text-left`.
+- Mirror directional icons: breadcrumb separators point left; "previous" points
+  right and "next" points left.
+- Base UI popups accept logical sides — prefer `side="inline-end"` over
+  `side="right"` so placement follows the document direction.
+- Both IBM Plex Sans Arabic and Amiri render correctly in RTL.
+- The sidebar takes `side="right"`, which is the RTL start edge.
+- Numbers and dates: `ar-EG-u-nu-latn` (Arabic month names, Latin digits) via
+  `src/utils/format.ts`.
 
 ---
 

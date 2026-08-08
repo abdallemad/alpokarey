@@ -1,0 +1,57 @@
+"use client";
+
+import Link from "next/link";
+import { LogIn, ShieldOff } from "lucide-react";
+
+import { ErrorState } from "@/components/admin/shared/error-state";
+import { EmptyState } from "@/components/shared";
+import { Button } from "@/components/ui/button";
+import { ApiRequestError } from "@/lib/axios";
+
+type ApiErrorStateProps = {
+  error: unknown;
+  /** Generic-failure heading, e.g. "تعذّر تحميل المسارات". */
+  title: string;
+  onRetry?: () => void;
+};
+
+/**
+ * Renders the right thing for a failed API call.
+ *
+ * A 401 or a 403 is not a malfunction — retrying will fail identically — so
+ * those get an explanation and a route forward instead of an error box with a
+ * retry button that cannot work.
+ */
+export function ApiErrorState({ error, title, onRetry }: ApiErrorStateProps) {
+  const status = error instanceof ApiRequestError ? error.status : 0;
+  const message =
+    error instanceof Error ? error.message : "حدث خطأ غير متوقع";
+
+  if (status === 401) {
+    return (
+      <EmptyState
+        icon={LogIn}
+        title="يجب تسجيل الدخول"
+        description="انتهت جلستك أو لم تسجّل الدخول بعد. سجّل الدخول بحساب له صلاحية مشرف للاطّلاع على بيانات لوحة التحكم."
+        action={
+          <Button nativeButton={false} render={<Link href="/sign-in" />}>
+            <LogIn />
+            تسجيل الدخول
+          </Button>
+        }
+      />
+    );
+  }
+
+  if (status === 403) {
+    return (
+      <EmptyState
+        icon={ShieldOff}
+        title="لا تملك صلاحية الوصول"
+        description="هذا القسم مخصص للمشرفين. حسابك الحالي مسجّل كطالب، لذا لا يمكن عرض بيانات لوحة التحكم أو تعديلها."
+      />
+    );
+  }
+
+  return <ErrorState title={title} description={message} onRetry={onRetry} />;
+}
