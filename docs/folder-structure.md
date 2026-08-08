@@ -600,10 +600,6 @@ Every feature should follow the same implementation order.
 
 - UI must never communicate with Axios, Prisma, or Services directly.
 - UI should communicate only with React Query hooks.
-  - *One documented exception:* the `/admin` dashboard landing page is a
-    read-only Server Component tree that calls Services directly, because
-    there is nothing to cache or mutate and the figures belong in the first
-    paint. See [`dashboard-feature.md`](./dashboard-feature.md).
 - Hooks should call Axios.
 - Axios should call `app/api` routes — never a Service or a Repository
   directly. This is what keeps the backend reusable for the future mobile
