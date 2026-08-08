@@ -17,4 +17,7 @@ export const queryKeys = {
     detail: (pathId: string) =>
       [...queryKeys.paths.details(), pathId] as const,
   },
+  dashboard: {
+    all: ["dashboard"] as const,
+  },
 } as const;
