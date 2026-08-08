@@ -18,7 +18,10 @@ export default function AdminNotFound() {
         title="الصفحة غير موجودة"
         description="الرابط الذي طلبته غير متاح داخل لوحة التحكم، أو أن العنصر المطلوب قد تم حذفه."
         action={
-          <Button render={<Link href={ROUTES.admin.dashboard} />}>
+          <Button
+            nativeButton={false}
+            render={<Link href={ROUTES.admin.dashboard} />}
+          >
             العودة إلى لوحة التحكم
           </Button>
         }

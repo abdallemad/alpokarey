@@ -1,30 +1,34 @@
 import type { Metadata } from "next";
-import { Route } from "lucide-react";
+import { Suspense } from "react";
 
+import { PathsView } from "@/components/admin/paths/paths-view";
 import {
-  EmptyState,
+  DataTableSkeleton,
   PageContainer,
-  PageHeader,
-  SectionCard,
+  PageHeaderSkeleton,
 } from "@/components/admin/shared";
 
 export const metadata: Metadata = { title: "المسارات" };
 
+/**
+ * `/admin/paths` — the paths list.
+ *
+ * The view reads its filters from the URL with `useSearchParams`, which Next
+ * requires to sit under a Suspense boundary.
+ */
 export default function AdminPathsPage() {
   return (
     <PageContainer>
-      <PageHeader
-        title="المسارات"
-        description="إدارة المسارات التعليمية: العنوان، التصنيف، حالة النشر، وتفعيل الشهادات."
-      />
-
-      <SectionCard title="قائمة المسارات" flush>
-        <EmptyState
-          icon={Route}
-          title="لم يتم ربط المسارات بعد"
-          description="سيظهر هنا جدول المسارات مع البحث والتصفية والترقيم بعد تنفيذ خاصية المسارات."
-        />
-      </SectionCard>
+      <Suspense
+        fallback={
+          <>
+            <PageHeaderSkeleton />
+            <DataTableSkeleton columns={4} rows={10} />
+          </>
+        }
+      >
+        <PathsView />
+      </Suspense>
     </PageContainer>
   );
 }
