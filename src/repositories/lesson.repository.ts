@@ -188,4 +188,22 @@ export const lessonRepository = {
   countProgress(lessonId: string) {
     return db.lessonProgress.count({ where: { lessonId } });
   },
+
+  /**
+   * Point exactly one lesson at a quiz — or none.
+   *
+   * The link lives on `Lesson.quizId`, so attaching an exam to a lesson is a
+   * write to *this* table even though it is the quiz editor asking. Clearing
+   * and setting run in one transaction: a half-applied relink would leave an
+   * exam attached to two lessons, or to none while the author believes it
+   * moved.
+   */
+  async setQuizLink(quizId: string, lessonId: string | null) {
+    await db.$transaction([
+      db.lesson.updateMany({ where: { quizId }, data: { quizId: null } }),
+      ...(lessonId
+        ? [db.lesson.update({ where: { id: lessonId }, data: { quizId } })]
+        : []),
+    ]);
+  },
 };
