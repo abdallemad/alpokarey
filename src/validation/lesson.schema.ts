@@ -57,11 +57,16 @@ const optionalText = (max: number, message: string) =>
  * protocol-relative URL) and `..` from getting through.
  */
 const attachmentUrl = z
-  .union([
-    z.string().trim().regex(STORAGE_PATH_PATTERN, "مسار الملف غير صالح"),
-    z.url("أدخل رابطًا صحيحًا"),
-    z.literal(""),
-  ])
+  .union(
+    [
+      z.string().trim().regex(STORAGE_PATH_PATTERN),
+      z.url(),
+      z.literal(""),
+    ],
+    // When every branch fails, Zod reports the union's own error rather than
+    // any branch's — without this it would surface as a bare "Invalid input".
+    "أدخل رابطًا صحيحًا أو ارفع ملفًا",
+  )
   .nullish()
   .transform((value) => (value ? value : null));
 

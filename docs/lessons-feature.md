@@ -132,6 +132,16 @@ Four decisions worth keeping:
   two different required-field sets: a `FILE` needs a `url`, a `TEXT` needs
   `content`. The Service then stores only the half that belongs to its branch,
   so a file attachment can never carry a stray body from an abandoned draft.
+- **An attachment's `url` accepts two forms, and `z.url()` alone is wrong for
+  it.** `lib/storage.ts` returns a **root-relative** path (`/uploads/<key>`),
+  which `z.url()` rejects outright — it wants an absolute URL. That mismatch
+  made every file upload fail with a bare `422 البيانات المُرسلة غير صالحة`
+  *after* the bytes had already been written to disk, which is exactly the
+  confusing half-success it looks like. The field is now a union of a storage
+  path and an absolute URL, with the storage branch pinned to a single path
+  segment (`STORAGE_PATH_PATTERN`) so `//evil.example` and `..` cannot pass.
+  `storageKey` is pinned to the same pattern, since it is the value that
+  becomes a filename.
 
 `duration` is free text (`"12:30"`, `"٤٥ دقيقة"`) because the column is a
 `String` and authors write it in whatever form reads best.
@@ -189,9 +199,16 @@ academy. The trailing `id` makes paging deterministic when the sort key repeats.
 | Width | Columns |
 |---|---|
 | base | order chip + title (+ `path ▸ stage` underneath) · النوع · row menu |
-| `md` | `+ المرحلة` (stage over path) |
+| `md` | `+ المسار` (with its status badge), `+ المرحلة` (with the stage's own order) |
 | `lg` | `+ المدة`, `+ المرفقات` |
 | `xl` | `+ تاريخ الإنشاء` |
+
+Path and stage get **a column each** from `md` up rather than being stacked in
+one cell: they are two different questions ("which track?" / "where in it?"),
+they are the two filters an admin reaches for most, and the stage column can
+then carry the stage's own `order` — which is the context that makes the
+lesson's `order` chip mean something. Below `md` both collapse into the single
+`path ▸ stage` line under the title.
 
 Four render states as everywhere else: skeleton · `ApiErrorState` (401 offers
 sign-in, 403 explains, else retry) · empty state, whose action depends on
@@ -272,7 +289,12 @@ but neither is configured in `.env`.
 | 20 MB ceiling | `constants/upload.ts`, enforced in `storage.save` |
 | MIME allowlist (pdf, images, audio, mp4, office, txt, zip) | same |
 | Stored filename is a generated UUID + an extension **derived from the allowlisted MIME type** | `storage.save` |
+| A key is one path segment, never starting with a dot (`STORAGE_KEY_PATTERN`) | `constants/upload.ts`, enforced by the schema |
 | Deletes resolve the path and refuse anything outside the upload root | `storage.remove` |
+
+`STORAGE_KEY_PATTERN` and `STORAGE_PATH_PATTERN` are built from one shared
+fragment, so the rule the schema accepts and the rule the driver produces
+cannot drift apart.
 
 The generated filename is the important one: `file.name` is attacker-controlled,
 and letting it decide a path on disk is how a traversal or an executable
@@ -424,6 +446,13 @@ browser sets `multipart/form-data` with its boundary.
   ```
 
   Counts before and after: 20 lessons, 12 attachments.
+- **`attachmentCreateSchema` exercised directly**, against the exact payload
+  `useAddAttachment` builds. Ten cases, all as expected: the uploaded-PDF
+  payload that was returning 422 now parses (`url=/uploads/…pdf`,
+  `key=…pdf`); an uploaded image, an external absolute URL and a text note all
+  parse; and `FILE` with no url, `TEXT` with no content, `//evil.example/a.pdf`,
+  `/uploads/../../etc/passwd`, a traversal in `storageKey`, and a nested
+  `/uploads/a/b.pdf` are all rejected with Arabic messages.
 - **Static serving of `public/uploads` confirmed** — a probe file written there
   was fetched over HTTP as `200 text/plain` with its exact body, which is the
   half of the local-disk driver most worth doubting. The probe was removed
@@ -461,6 +490,11 @@ reasoned about in §9 but has not been exercised end to end.
    5–10 hours; nothing computes or validates that total.
 6. **Uploads are local-disk.** See §6 — fine for development, not a production
    object store.
+7. **A failed attach leaves the uploaded file behind.** The two-step design
+   means the bytes land before the row does, so if the second request fails the
+   object stays in `public/uploads` with nothing pointing at it. Cleaning that
+   up needs a "discard upload" endpoint the client can call on failure, or a
+   periodic sweep of keys with no matching `Attachment`.
 
 ---
 
