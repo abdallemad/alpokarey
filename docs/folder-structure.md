@@ -6,6 +6,7 @@
 - [`erd.md`](./erd.md) — entity relationships (Path, Stage, Lesson, Quiz, Enrollment, Certificate...)
 - [`tech-stack.md`](./tech-stack.md) — Next.js (App Router), Clerk auth, shadcn/ui, TanStack React Query, Axios, Prisma ORM, PostgreSQL
 - [`storefront-layout.md`](./storefront-layout.md) — the two learner-facing shells (`(marketing)` header, `(app)` sidebar), the shared brand lockup, the database-driven nav, the account menu
+- [`student-dashboard.md`](./student-dashboard.md) — the `(app)` shell as built, and `/dashboard`: progress, the resume card, attempts and certificates
 - [`landing-page.md`](./landing-page.md) — `/` and `/about`, the public marketing routes
 - [`tracks-catalog-feature.md`](./tracks-catalog-feature.md) — `/paths`, the public catalog of learning tracks and its category/audience facets
 - [`path-detail-feature.md`](./path-detail-feature.md) — `/paths/[pathId]`, the curriculum view: stages, lessons, and enrollment call-to-action
@@ -19,7 +20,7 @@
 - [`paths-feature.md`](./paths-feature.md) — the reference CRUD feature, layer by layer
 - [`stages-feature.md`](./stages-feature.md) — the same pattern with `order`, grouped by parent path, and paginated by path so a group is never split
 - [`lessons-feature.md`](./lessons-feature.md) — the same pattern with a content-type switch (video/text), a full-page editor, and file attachments backed by `lib/storage.ts`
-- [`quizzes-feature.md`](./quizzes-feature.md) — the same pattern with a nested question/option editor
+- [`quizzes-feature.md`](./quizzes-feature.md) — the same pattern, organised around whether an exam is a stage's final or a lesson's (questions still read-only)
 - [`users-feature.md`](./users-feature.md) — read-first: accounts mirrored from Clerk, with the STUDENT/ADMIN role guard
 - [`database-seeding.md`](./database-seeding.md) — mock data for development
 
@@ -100,8 +101,9 @@ app/
 │   ├── page.tsx             #   /       — landing-page.md
 │   └── about/                #   /about  — landing-page.md
 │
-├── (app)/                  # sidebar only — see storefront-layout.md
+├── (app)/                  # sidebar only — see student-dashboard.md
 │   ├── layout.tsx
+│   ├── dashboard/            #   /dashboard            — student-dashboard.md
 │   ├── paths/                #   /paths                — tracks-catalog-feature.md
 │   │   └── [pathId]/          #   /paths/[pathId]        — path-detail-feature.md
 │   ├── learn/
@@ -233,12 +235,15 @@ callbacks and know nothing about any entity.
 ```text
 shared/
 │
+├── account-menu.tsx        # avatar, profile, sign out — both shells
+├── api-error-state.tsx     # branches on 401 / 403 / other
+├── brand-lockup.tsx
 ├── empty-state.tsx
-├── logo-avatar.tsx
-├── pagination.tsx
+├── error-state.tsx
+├── page-container.tsx      # the padded column any page renders into
+├── page-header.tsx         # title + description + actions
 ├── search-input.tsx
-├── status-badge.tsx
-├── progress-ring.tsx
+├── theme-toggle.tsx
 └── index.ts
 ```
 

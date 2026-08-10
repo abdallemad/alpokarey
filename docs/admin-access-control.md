@@ -31,8 +31,11 @@ Clerk sign-in
    ↓
 userService.syncFromClerk()      ← creates or updates the local User row
    ↓
-ADMIN → /admin        ·        STUDENT → /
+ADMIN → /admin        ·        STUDENT → /dashboard
 ```
+
+> Students were sent to `/` until the learner dashboard existed. They now land
+> on `/dashboard` — see [`student-dashboard.md`](./student-dashboard.md) §7.
 
 `auth-callback/route.ts` stays thin — no Prisma, no role logic. Both belong to
 `services/user.service.ts`, per the layer rules in `folder-structure.md`.

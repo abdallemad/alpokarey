@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { House } from "lucide-react";
 
-import { BrandLockup } from "@/components/shared";
+import { AccountMenu, BrandLockup } from "@/components/shared";
 import {
   Sidebar,
   SidebarContent,
@@ -23,7 +23,6 @@ import {
 import { ADMIN_NAV_GROUPS } from "@/constants/admin-navigation";
 import { ROUTES } from "@/constants/routes";
 import { isNavItemActive } from "@/utils/nav";
-import { AdminUserMenu } from "./admin-user-menu";
 
 /**
  * The admin console's primary navigation.
@@ -105,7 +104,7 @@ export function AdminSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <AdminUserMenu />
+        <AccountMenu />
       </SidebarFooter>
 
       <SidebarRail />

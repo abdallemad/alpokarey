@@ -8,6 +8,17 @@
 export const ROUTES = {
   home: "/",
 
+  /** The learner-facing app — the `(app)` route group. */
+  app: {
+    dashboard: "/dashboard",
+    paths: "/paths",
+    certificates: "/account/certificates",
+    /** The lesson player. Not built yet — see `docs/student-dashboard.md` §9. */
+    lesson: (pathId: string, lessonId: string) =>
+      `/learn/${pathId}/${lessonId}`,
+    path: (pathId: string) => `/paths/${pathId}`,
+  },
+
   admin: {
     dashboard: "/admin",
     paths: "/admin/paths",

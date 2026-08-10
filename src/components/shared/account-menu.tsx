@@ -27,12 +27,19 @@ function getInitial(name: string | null | undefined, email: string | undefined) 
 }
 
 /**
- * The signed-in admin's account control, pinned to the sidebar footer.
+ * The signed-in person's account control, pinned to a sidebar footer.
  *
- * Renders three states: a skeleton while Clerk boots, a sign-in prompt when
- * there is no session, and the account menu once a user is available.
+ * Domain-neutral: the admin console and the learner app mount the same
+ * component, because "who am I and how do I sign out" is the same question in
+ * both. It renders three states — a skeleton while Clerk boots, a sign-in
+ * prompt when there is no session, and the menu once a user is available.
  */
-export function AdminUserMenu() {
+export function AccountMenu({
+  /** Where signing out lands. */
+  signOutRedirect = ROUTES.home,
+}: {
+  signOutRedirect?: string;
+} = {}) {
   const { isMobile } = useSidebar();
   const { isLoaded, isSignedIn, user } = useUser();
   const { signOut, openUserProfile } = useClerk();
@@ -136,7 +143,7 @@ export function AdminUserMenu() {
 
             <DropdownMenuItem
               variant="destructive"
-              onClick={() => signOut({ redirectUrl: ROUTES.home })}
+              onClick={() => signOut({ redirectUrl: signOutRedirect })}
             >
               <LogOut />
               <span>تسجيل الخروج</span>
