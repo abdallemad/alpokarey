@@ -1,5 +1,6 @@
 import type { LessonsQueryState } from "@/types/lesson";
 import type { PathsQueryState } from "@/types/path";
+import type { QuizzesQueryState } from "@/types/quiz";
 import type { StagesQueryState } from "@/types/stage";
 
 /**
@@ -33,6 +34,15 @@ export const queryKeys = {
     details: () => [...queryKeys.lessons.all, "detail"] as const,
     detail: (lessonId: string) =>
       [...queryKeys.lessons.details(), lessonId] as const,
+  },
+  quizzes: {
+    all: ["quizzes"] as const,
+    lists: () => [...queryKeys.quizzes.all, "list"] as const,
+    list: (query: QuizzesQueryState) =>
+      [...queryKeys.quizzes.lists(), query] as const,
+    details: () => [...queryKeys.quizzes.all, "detail"] as const,
+    detail: (quizId: string) =>
+      [...queryKeys.quizzes.details(), quizId] as const,
   },
   dashboard: {
     all: ["dashboard"] as const,
