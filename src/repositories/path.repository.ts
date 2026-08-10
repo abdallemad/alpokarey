@@ -110,6 +110,18 @@ export const pathRepository = {
     return db.path.findUnique({ where: { id }, select: detailSelect });
   },
 
+  /**
+   * Just enough of a path to guard a child record — existence, name for an
+   * error message, and publication state. Avoids pulling the whole stage tree
+   * of `detailSelect` when all a caller needs is "does this path exist?".
+   */
+  findSummary(id: string) {
+    return db.path.findUnique({
+      where: { id },
+      select: { id: true, title: true, status: true },
+    });
+  },
+
   create(data: Prisma.PathUncheckedCreateInput) {
     return db.path.create({ data, select: detailSelect });
   },

@@ -12,6 +12,10 @@ type DataPaginationProps = {
   onPageChange: (page: number) => void;
   /** Dims the controls while a page is in flight. */
   isLoading?: boolean;
+  /** The thing being counted, e.g. "مسار" or "مرحلة". */
+  itemLabel?: string;
+  /** A second figure appended to the summary, when one number is not enough. */
+  details?: string;
 };
 
 /**
@@ -26,6 +30,8 @@ export function DataPagination({
   total,
   onPageChange,
   isLoading = false,
+  itemLabel = "عنصر",
+  details,
 }: DataPaginationProps) {
   if (total === 0) return null;
 
@@ -33,7 +39,8 @@ export function DataPagination({
     <div className="flex flex-col items-center justify-between gap-3 px-4 pt-4 sm:flex-row">
       <p className="text-xs text-muted-foreground">
         صفحة {formatNumber(page)} من {formatNumber(totalPages)} · إجمالي{" "}
-        {formatNumber(total)} مسار
+        {formatNumber(total)} {itemLabel}
+        {details ? ` · ${details}` : null}
       </p>
 
       <div className="flex items-center gap-2">

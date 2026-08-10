@@ -412,8 +412,11 @@ which is exactly the drift the shared schema exists to prevent.
 ## 14. Next steps
 
 1. Sign in as an ADMIN and walk create → edit → publish → delete.
-2. Apply this pattern to stages (adds `order`), lessons (content-type switch),
-   quizzes (nested question editor), and users (read-first).
+2. Apply this pattern to quizzes (nested question editor) and users
+   (read-first). Stages and lessons are done —
+   [`stages-feature.md`](./stages-feature.md) and
+   [`lessons-feature.md`](./lessons-feature.md) record where each had to depart
+   from this pattern.
 3. Guard `/admin` pages server-side — see `admin-dashboard.md` §11.
 4. Consider `updateTag`/`revalidateTag` if any of this data ever moves to a
    Server Component read path.
