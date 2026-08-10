@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { LogIn, ShieldOff } from "lucide-react";
 
-import { ErrorState } from "@/components/admin/shared/error-state";
-import { EmptyState } from "@/components/shared";
+import { EmptyState } from "@/components/shared/empty-state";
+import { ErrorState } from "@/components/shared/error-state";
 import { Button } from "@/components/ui/button";
 import { ApiRequestError } from "@/lib/axios";
 
@@ -32,7 +32,11 @@ export function ApiErrorState({ error, title, onRetry }: ApiErrorStateProps) {
       <EmptyState
         icon={LogIn}
         title="يجب تسجيل الدخول"
-        description="انتهت جلستك أو لم تسجّل الدخول بعد. سجّل الدخول بحساب له صلاحية مشرف للاطّلاع على بيانات لوحة التحكم."
+        // Neutral wording on purpose: this component is shared, and a learner
+        // hitting a 401 on their own dashboard should not be told to find an
+        // admin account. The 403 branch below stays admin-specific because
+        // only admin endpoints ever return it.
+        description="انتهت جلستك أو لم تسجّل الدخول بعد. سجّل الدخول للمتابعة."
         action={
           <Button nativeButton={false} render={<Link href="/sign-in" />}>
             <LogIn />

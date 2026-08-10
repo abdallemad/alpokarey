@@ -332,15 +332,18 @@ components/
     │   └── index.ts
     │
     └── shared/
-        ├── page-container.tsx           # p-4 md:p-6, gap-6
-        ├── page-header.tsx              # title + description + actions slot
         ├── section-card.tsx             # titled panel; `flush` for tables
-        ├── error-state.tsx
         ├── skeletons.tsx
         ├── data-pagination.tsx
         ├── delete-confirmation-dialog.tsx
         └── index.ts                     # also re-exports components/shared
 ```
+
+> **Moved since:** `page-container`, `page-header`, `error-state`,
+> `api-error-state` and the account menu now live in `components/shared`,
+> because the learner shell renders the same ones — see
+> [`student-dashboard.md`](./student-dashboard.md) §8. The admin barrel
+> re-exports all of them, so no admin import changed.
 
 `components/admin/shared/index.ts` re-exports the domain-neutral components, so
 admin features import from one path as `folder-structure.md` specifies:

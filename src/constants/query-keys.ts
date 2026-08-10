@@ -44,6 +44,11 @@ export const queryKeys = {
     detail: (quizId: string) =>
       [...queryKeys.quizzes.details(), quizId] as const,
   },
+  /** The signed-in learner's own data — never keyed by id, there is only one. */
+  student: {
+    all: ["student"] as const,
+    dashboard: () => [...queryKeys.student.all, "dashboard"] as const,
+  },
   dashboard: {
     all: ["dashboard"] as const,
   },

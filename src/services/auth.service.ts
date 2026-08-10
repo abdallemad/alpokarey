@@ -20,6 +20,23 @@ export const authService = {
   },
 
   /**
+   * Guard for endpoints that serve the signed-in person their **own** data.
+   *
+   * Role-blind on purpose: an admin is also a learner, and every consumer of
+   * this scopes its queries by the returned `user.id`, so there is no wider
+   * data to leak. Throws rather than returning a flag, like `requireAdmin`.
+   */
+  async requireUser(): Promise<AppUser> {
+    const user = await this.getCurrentUser();
+
+    if (!user) {
+      throw new UnauthorizedError();
+    }
+
+    return user;
+  },
+
+  /**
    * Guard for every admin-only endpoint. Throws rather than returning a flag so
    * a route can never forget to check the result.
    */

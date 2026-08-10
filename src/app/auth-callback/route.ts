@@ -52,8 +52,10 @@ export async function GET(request: Request) {
 
     // Students have nothing to do in the console — sending everyone to /admin
     // meant a student landed on a page where every request returns 403.
+    // Students now land on their own dashboard rather than the marketing home,
+    // because it is the page that tells them what to do next.
     const destination =
-      user.role === "ADMIN" ? ROUTES.admin.dashboard : ROUTES.home;
+      user.role === "ADMIN" ? ROUTES.admin.dashboard : ROUTES.app.dashboard;
 
     return NextResponse.redirect(new URL(destination, request.url));
   } catch (error) {

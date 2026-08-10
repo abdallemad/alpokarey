@@ -1,9 +1,5 @@
-export { ApiErrorState } from "./api-error-state";
 export { DataPagination } from "./data-pagination";
 export { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
-export { ErrorState } from "./error-state";
-export { PageContainer } from "./page-container";
-export { PageHeader } from "./page-header";
 export { SectionCard } from "./section-card";
 export {
   DataTableSkeleton,
@@ -14,10 +10,18 @@ export {
 /**
  * Re-exported from `components/shared` so admin features import everything from
  * one path — see `docs/folder-structure.md`.
+ *
+ * The page shell (`PageContainer`, `PageHeader`) and the error states live in
+ * `components/shared` because the learner app renders the same ones; they are
+ * re-exported here so no admin import had to change when they moved.
  */
 export {
+  ApiErrorState,
   BrandLockup,
   EmptyState,
+  ErrorState,
+  PageContainer,
+  PageHeader,
   SearchInput,
   ThemeToggle,
 } from "@/components/shared";
