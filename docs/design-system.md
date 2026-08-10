@@ -707,6 +707,7 @@ Full write-up: [`admin-dashboard.md`](./admin-dashboard.md) §9.
 | `sidebar.tsx` | `text-left`→`text-start`, `pr-8`→`pe-8`, `right-1/3`→`end-1/3`, `border-l`→`border-s`, `ml-0/ml-2`→`ms-0/ms-2`; trigger icon gets `rtl:rotate-180` |
 | `table.tsx` | `text-left`→`text-start`, `pr-0`→`pe-0` |
 | `select.tsx` | `text-left`→`text-start`, trigger and item padding to `ps-*/pe-*`, check indicator `right-2`→`end-2` |
+| `dialog.tsx` | close button `right-2`→`end-2` — physical `right` is the RTL *start* edge, which put the button over the title |
 | `alert-dialog.tsx` | `sm:…text-left`→`text-start` |
 
 If you re-add any of these from the shadcn registry, re-apply the fixes or

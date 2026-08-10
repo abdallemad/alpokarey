@@ -38,8 +38,8 @@ src/app/
         ├── not-found.tsx         # unknown /admin/* URLs, inside the shell
         │
         ├── paths/                # see paths-feature.md
-        ├── stages/               # placeholder + table skeleton
-        ├── lessons/              # placeholder + table skeleton
+        ├── stages/               # see stages-feature.md
+        ├── lessons/              # see lessons-feature.md
         ├── quizzes/              # placeholder + table skeleton
         └── users/                # placeholder + table skeleton
 ```
@@ -51,8 +51,8 @@ segment to the URL. `/admin` stays `/admin`.
 
 Every sidebar destination resolves to a real page. A nav item that 404s makes
 the shell impossible to review, so each section renders its page header and an
-`EmptyState` explaining that the feature is not wired yet. `paths/` has since
-been built out for real.
+`EmptyState` explaining that the feature is not wired yet. `paths/`, `stages/`
+and `lessons/` have since been built out for real.
 
 ---
 
@@ -205,7 +205,10 @@ header stay rendered and interactive while only the content column streams.
 | `admin/loading.tsx` | Page header + 4 stat cards + a chart block |
 | `admin/paths/loading.tsx` | Page header + 4-column table skeleton |
 | `admin/paths/[pathId]/loading.tsx` | Page header + stat cards + form block |
-| `admin/stages\|lessons\|quizzes\|users/loading.tsx` | Table skeletons, column counts matched to each screen |
+| `admin/stages/loading.tsx` | Page header **without** an action + table skeleton — the real header's create button is a dialog trigger, not a link |
+| `admin/lessons/loading.tsx` | Page header + 5-column table skeleton |
+| `admin/lessons/[lessonId]/loading.tsx` | Page header + 3 stat cards + form block |
+| `admin/quizzes\|users/loading.tsx` | Table skeletons, column counts matched to each screen |
 
 Each segment gets its own rather than inheriting one generic fallback: a
 dashboard skeleton flashing while navigating to a table page reads as a bug.
@@ -280,6 +283,7 @@ shadcn's base-nova components ship physical-direction classes that break when
 |---|---|
 | `sidebar.tsx` | `text-left`→`text-start`, `pr-8`→`pe-8`, `right-1/3`→`end-1/3`, `border-l`→`border-s`, `ml-0/ml-2`→`ms-0/ms-2`; trigger icon gets `rtl:rotate-180` |
 | `table.tsx` | `text-left`→`text-start`, `pr-0`→`pe-0` |
+| `dialog.tsx` | close button `right-2`→`end-2` — in RTL the physical `right` is the *start* edge, so the button sat on top of the title |
 | `select.tsx` | `text-left`→`text-start`, `pr-2 pl-2.5`→`pe-2 ps-2.5`, item padding and the check indicator's `right-2`→`end-2` |
 | `alert-dialog.tsx` | `sm:…text-left`→`text-start` |
 
@@ -389,4 +393,5 @@ shell, but every request inside it returns 401/403, so no data leaks. See
 1. Guard `/admin` pages server-side and document it in `admin-access-control.md`.
 2. Build the Clerk webhook so `User` rows and roles stay in sync.
 3. Replace the dashboard's placeholder figures — see `dashboard-feature.md`.
-4. Apply the `paths` pattern to stages, lessons, quizzes, and users.
+4. Apply the `paths` pattern to quizzes and users — stages and lessons are
+   done, see `stages-feature.md` and `lessons-feature.md`.

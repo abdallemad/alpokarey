@@ -37,3 +37,12 @@ export const PATH_SORT_LABELS: Record<string, string> = {
 };
 
 export const PATHS_PAGE_SIZE = 10;
+
+/**
+ * How many paths a "choose a path" filter can offer.
+ *
+ * Such filters reuse `GET /api/paths`, whose `pageSize` is capped at 100 by
+ * `pathListQuerySchema`. Past that many paths the select has to become a
+ * searchable combobox backed by its own endpoint.
+ */
+export const PATH_OPTIONS_LIMIT = 100;

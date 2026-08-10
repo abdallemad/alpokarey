@@ -17,8 +17,8 @@
 - [`admin-access-control.md`](./admin-access-control.md) — how `/admin` is locked down (Clerk role + middleware + server-side guard)
 - [`dashboard-feature.md`](./dashboard-feature.md) — the `/admin` landing figures (enrollments, completion rates, certificate counts)
 - [`paths-feature.md`](./paths-feature.md) — the reference CRUD feature, layer by layer
-- [`stages-feature.md`](./stages-feature.md) — the same pattern, nested under a path, with `order`
-- [`lessons-feature.md`](./lessons-feature.md) — the same pattern with a content-type switch (video/text) and attachments
+- [`stages-feature.md`](./stages-feature.md) — the same pattern with `order`, grouped by parent path, and paginated by path so a group is never split
+- [`lessons-feature.md`](./lessons-feature.md) — the same pattern with a content-type switch (video/text), a full-page editor, and file attachments backed by `lib/storage.ts`
 - [`quizzes-feature.md`](./quizzes-feature.md) — the same pattern with a nested question/option editor
 - [`users-feature.md`](./users-feature.md) — read-first: accounts mirrored from Clerk, with the STUDENT/ADMIN role guard
 - [`database-seeding.md`](./database-seeding.md) — mock data for development
@@ -126,15 +126,25 @@ app/
 │   │   ├── route.ts           # GET (list) / POST (create)
 │   │   └── [pathId]/
 │   │       ├── route.ts        # GET (one) / PATCH / DELETE
-│   │       ├── stages/
-│   │       │   └── route.ts
 │   │       └── enroll/
 │   │           └── route.ts    # POST — create Enrollment
+│   ├── stages/                 # top-level, not nested — see stages-feature.md §8
+│   │   ├── route.ts            # GET (list, grouped by path) / POST (create)
+│   │   └── [stageId]/
+│   │       └── route.ts        # GET / PATCH / DELETE
 │   ├── lessons/
+│   │   ├── route.ts            # GET (list) / POST (create)
 │   │   └── [lessonId]/
-│   │       ├── route.ts
+│   │       ├── route.ts        # GET / PATCH / DELETE
+│   │       ├── attachments/
+│   │       │   └── route.ts    # POST — attach a file or a note
 │   │       └── progress/
 │   │           └── route.ts    # POST — mark LessonProgress complete
+│   ├── attachments/
+│   │   └── [attachmentId]/
+│   │       └── route.ts        # DELETE — row + stored object
+│   ├── uploads/
+│   │   └── route.ts            # POST — multipart, see lessons-feature.md §6
 │   ├── quizzes/
 │   │   └── [quizId]/
 │   │       ├── route.ts
@@ -478,7 +488,9 @@ Examples:
 - `axios.ts` — configured Axios instance (base URL, interceptors, auth header)
 - `query-client.ts` — React Query client
 - `clerk.ts` — Clerk configuration / server helpers
-- `cloudflare-r2.ts` — R2 client for lesson attachments and certificate assets
+- `storage.ts` — where uploaded files go. Currently a local-disk driver writing
+  to `public/uploads`; `save()`/`remove()` are the seam an R2 or Cloudinary
+  driver would replace. See [`lessons-feature.md`](./lessons-feature.md) §6
 
 ---
 

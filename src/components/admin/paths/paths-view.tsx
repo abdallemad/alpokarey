@@ -271,6 +271,7 @@ export function PathsView() {
                 totalPages={data.totalPages}
                 total={data.total}
                 isLoading={isFetching}
+                itemLabel="مسار"
                 onPageChange={(page) => setParams({ page })}
               />
             </>
