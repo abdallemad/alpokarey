@@ -7,12 +7,14 @@ import {
 import type { AppUser } from "@/repositories/user.repository";
 import type {
   EnrolledPath,
+  EnrolledPathsResult,
   NextLesson,
   StudentAttempt,
   StudentCertificate,
   StudentDashboard,
   StudentStats,
 } from "@/types/student";
+import type { EnrolledPathsQuery } from "@/validation/student.schema";
 
 /**
  * Business logic for the learner's own dashboard.
@@ -24,6 +26,12 @@ import type {
 
 /** How many past attempts the dashboard shows. Enough to see a trend. */
 const RECENT_ATTEMPTS_LIMIT = 5;
+
+/** Percentages are integers in 0–100 everywhere they leave this module. */
+function toPercent(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(100, Math.max(0, Math.round(value)));
+}
 
 function toNextLesson(
   enrollment: StudentEnrollmentRow,
@@ -48,22 +56,51 @@ function toNextLesson(
   return null;
 }
 
+/**
+ * One enrolment, with its progress reconciled from both records the database
+ * keeps of it.
+ *
+ * `LessonProgress` is the finer truth — it names the lessons — so it wins
+ * whenever it is ahead. `Enrollment.progress` fills the gap for enrolments
+ * whose progress was recorded before per-lesson tracking existed, which is the
+ * state most rows are in today: reading only the lesson rows told those
+ * learners they were at 0% while the column beside them said 67%.
+ *
+ * The rule is that the learner is never shown less than the database already
+ * records for them, and `progressSource` says which record answered.
+ */
 function toEnrolledPath(
   enrollment: StudentEnrollmentRow,
   completed: Set<string>,
   certificatePathIds: Set<string>,
 ): EnrolledPath {
   const lessons = enrollment.path.stages.flatMap((stage) => stage.lessons);
-  const completedLessonsCount = lessons.filter((lesson) =>
+  const trackedLessonsCount = lessons.filter((lesson) =>
     completed.has(lesson.id),
   ).length;
 
   // A path with no lessons yet is 0%, not 100%. Dividing by zero would
   // otherwise congratulate a learner for finishing an empty curriculum.
-  const progress =
+  const computedProgress =
     lessons.length === 0
       ? 0
-      : Math.round((completedLessonsCount / lessons.length) * 100);
+      : toPercent((trackedLessonsCount / lessons.length) * 100);
+  const storedProgress = toPercent(enrollment.progress);
+
+  const usesStoredProgress = storedProgress > computedProgress;
+  const progress = usesStoredProgress ? storedProgress : computedProgress;
+
+  // With the stored column driving the bar, the "n of m lessons" caption has to
+  // follow it — a card reading "0 of 2 lessons · 67%" contradicts itself.
+  const completedLessonsCount = usesStoredProgress
+    ? Math.max(
+        trackedLessonsCount,
+        Math.round((progress / 100) * lessons.length),
+      )
+    : trackedLessonsCount;
+
+  const isCompleted =
+    enrollment.isCompleted || (lessons.length > 0 && progress === 100);
 
   return {
     id: enrollment.path.id,
@@ -71,14 +108,18 @@ function toEnrolledPath(
     description: enrollment.path.description,
     imageUrl: enrollment.path.imageUrl,
     category: enrollment.path.category,
+    status: enrollment.path.status,
     certificationActivated: enrollment.path.certificationActivated,
     stagesCount: enrollment.path.stages.length,
     lessonsCount: lessons.length,
     completedLessonsCount,
     progress,
-    isCompleted: lessons.length > 0 && completedLessonsCount === lessons.length,
+    progressSource: usesStoredProgress ? "enrollment" : "lessons",
+    isCompleted,
     hasCertificate: certificatePathIds.has(enrollment.path.id),
-    nextLesson: toNextLesson(enrollment, completed),
+    // A finished path has no next lesson, even when no `LessonProgress` row
+    // exists to prove which ones were done.
+    nextLesson: isCompleted ? null : toNextLesson(enrollment, completed),
     enrolledAt: enrollment.createdAt.toISOString(),
   };
 }
@@ -127,11 +168,22 @@ function toStats(paths: EnrolledPath[], certificatesCount: number): StudentStats
     completedLessonsCount,
     totalLessonsCount,
     // Averaged over lessons, not over paths: a 2-lesson path and a 60-lesson
-    // path should not weigh the same in a single headline figure.
+    // path should not weigh the same in a single headline figure. Because each
+    // path's lesson count already follows its reconciled progress, this figure
+    // reflects the stored column wherever that is what the database holds.
+    //
+    // The fallback covers the one case the weighting cannot: enrolments in
+    // paths that have no lessons published yet, where a mean over paths is the
+    // only average available.
     overallProgress:
-      totalLessonsCount === 0
-        ? 0
-        : Math.round((completedLessonsCount / totalLessonsCount) * 100),
+      totalLessonsCount > 0
+        ? toPercent((completedLessonsCount / totalLessonsCount) * 100)
+        : paths.length === 0
+          ? 0
+          : toPercent(
+              paths.reduce((total, path) => total + path.progress, 0) /
+                paths.length,
+            ),
   };
 }
 
@@ -140,31 +192,90 @@ function toDisplayName(user: AppUser): string {
   return user.name?.trim() || user.email.split("@")[0];
 }
 
+/**
+ * Least-finished first, and finished paths last.
+ *
+ * Both screens that list enrolments are answering "what should I do now?", and
+ * a completed path never is.
+ */
+function byLeastFinished(a: EnrolledPath, b: EnrolledPath): number {
+  if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
+  return b.progress - a.progress;
+}
+
+/**
+ * Every enrolment this learner holds, mapped and reconciled.
+ *
+ * Shared by the dashboard and `/paths` so the two screens can never report
+ * different progress for the same path. The certificate rows come back with it
+ * because both callers need them — the dashboard to list them, `/paths` to
+ * count them — and re-querying would be a second round trip for a row set that
+ * is already in hand.
+ */
+async function collectEnrolledPaths(userId: string): Promise<{
+  paths: EnrolledPath[];
+  certificates: StudentCertificateRow[];
+}> {
+  const [enrollments, completedLessonIds, certificates] = await Promise.all([
+    studentRepository.findEnrollments(userId),
+    studentRepository.findCompletedLessonIds(userId),
+    studentRepository.findCertificates(userId),
+  ]);
+
+  const completed = new Set(completedLessonIds);
+  const certificatePathIds = new Set(
+    certificates.map((certificate) => certificate.path.id),
+  );
+
+  const paths = enrollments
+    .map((enrollment) =>
+      toEnrolledPath(enrollment, completed, certificatePathIds),
+    )
+    .sort(byLeastFinished);
+
+  return { paths, certificates };
+}
+
+/** `state=` — where a learner is in a path, in the words they think in. */
+function matchesState(path: EnrolledPath, state: EnrolledPathsQuery["state"]) {
+  switch (state) {
+    case "completed":
+      return path.isCompleted;
+    case "in-progress":
+      return !path.isCompleted && path.progress > 0;
+    case "not-started":
+      return !path.isCompleted && path.progress === 0;
+    default:
+      return true;
+  }
+}
+
+function matchesSearch(path: EnrolledPath, search: string) {
+  const needle = search.trim().toLowerCase();
+  if (needle === "") return true;
+
+  return (
+    path.title.toLowerCase().includes(needle) ||
+    (path.description?.toLowerCase().includes(needle) ?? false)
+  );
+}
+
+const ENROLLED_PATH_COMPARATORS = {
+  progress: byLeastFinished,
+  recent: (a: EnrolledPath, b: EnrolledPath) =>
+    b.enrolledAt.localeCompare(a.enrolledAt),
+  title: (a: EnrolledPath, b: EnrolledPath) => a.title.localeCompare(b.title, "ar"),
+} satisfies Record<
+  EnrolledPathsQuery["sort"],
+  (a: EnrolledPath, b: EnrolledPath) => number
+>;
+
 export const studentService = {
   async getDashboard(user: AppUser): Promise<StudentDashboard> {
-    const [enrollments, completedLessonIds, attempts, certificates] =
-      await Promise.all([
-        studentRepository.findEnrollments(user.id),
-        studentRepository.findCompletedLessonIds(user.id),
-        studentRepository.findRecentAttempts(user.id, RECENT_ATTEMPTS_LIMIT),
-        studentRepository.findCertificates(user.id),
-      ]);
-
-    const completed = new Set(completedLessonIds);
-    const certificatePathIds = new Set(
-      certificates.map((certificate) => certificate.path.id),
-    );
-
-    const paths = enrollments
-      .map((enrollment) =>
-        toEnrolledPath(enrollment, completed, certificatePathIds),
-      )
-      // Least-finished first, and finished paths last: the dashboard's job is
-      // to answer "what should I do now?", and a completed path never is.
-      .sort((a, b) => {
-        if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
-        return b.progress - a.progress;
-      });
+    const [{ paths, certificates }, attempts] = await Promise.all([
+      collectEnrolledPaths(user.id),
+      studentRepository.findRecentAttempts(user.id, RECENT_ATTEMPTS_LIMIT),
+    ]);
 
     // "Resume here" is the furthest-along unfinished path — the one with
     // momentum behind it, rather than whichever was enrolled in last.
@@ -186,6 +297,43 @@ export const studentService = {
           : null,
       recentAttempts: attempts.map(toAttempt),
       certificates: certificates.map(toCertificate),
+    };
+  },
+
+  /**
+   * `/paths` — the learner's enrolments, filtered and sorted.
+   *
+   * Filtering happens here rather than in SQL because `progress` is not a
+   * column: it is reconciled from two records, and `state=in-progress` is a
+   * question about the reconciled value. Search and category could be pushed
+   * down, but splitting the predicate across two layers would mean a filtered
+   * list and its summary disagreed about what "all" meant.
+   *
+   * The cost is bounded by how many paths one person can enrol in. Should that
+   * ever reach the hundreds, `Enrollment.progress` needs to be maintained by a
+   * completion endpoint first — then the whole predicate becomes a `where`.
+   */
+  async getEnrolledPaths(
+    user: AppUser,
+    query: EnrolledPathsQuery,
+  ): Promise<EnrolledPathsResult> {
+    const { paths, certificates } = await collectEnrolledPaths(user.id);
+
+    const matching = paths
+      .filter(
+        (path) =>
+          matchesState(path, query.state) &&
+          matchesSearch(path, query.search ?? "") &&
+          (query.category === "all" || path.category === query.category),
+      )
+      .sort(ENROLLED_PATH_COMPARATORS[query.sort]);
+
+    return {
+      paths: matching,
+      // Computed over every enrolment, so the summary describes the learner
+      // rather than whatever filter happens to be applied.
+      stats: toStats(paths, certificates.length),
+      totalEnrolled: paths.length,
     };
   },
 };

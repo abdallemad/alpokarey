@@ -23,6 +23,9 @@ const enrollmentSelect = {
       description: true,
       imageUrl: true,
       category: true,
+      // An enrolment survives its path being unpublished, so the learner's own
+      // list has to be able to say that the content is not live yet.
+      status: true,
       certificationActivated: true,
       // The whole curriculum, ordered — this is what makes "how far am I?"
       // and "what is next?" answerable in one pass without a second query

@@ -2,6 +2,7 @@ import type { LessonsQueryState } from "@/types/lesson";
 import type { PathsQueryState } from "@/types/path";
 import type { QuizzesQueryState } from "@/types/quiz";
 import type { StagesQueryState } from "@/types/stage";
+import type { EnrolledPathsQueryState } from "@/types/student";
 
 /**
  * Every React Query cache key in one place.
@@ -48,6 +49,9 @@ export const queryKeys = {
   student: {
     all: ["student"] as const,
     dashboard: () => [...queryKeys.student.all, "dashboard"] as const,
+    paths: () => [...queryKeys.student.all, "paths"] as const,
+    pathsList: (query: EnrolledPathsQueryState) =>
+      [...queryKeys.student.paths(), query] as const,
   },
   dashboard: {
     all: ["dashboard"] as const,

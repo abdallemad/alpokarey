@@ -26,14 +26,26 @@ export default function Home() {
               ابدأ رحلتك في تعلم السنة النبوية اليوم.
             </p>
             <div className="mt-10 flex justify-center gap-x-6">
-              <Button size="lg" className="h-12 px-8 text-base" asChild>
-                <Link href="/sign-up">
-                  ابدأ التعلم الآن
-                  <ChevronLeft className="ms-2 size-4" />
-                </Link>
+              {/* Base UI, not Radix: a Button that renders an anchor takes
+                  `render` plus `nativeButton={false}` — see
+                  docs/paths-feature.md §13. */}
+              <Button
+                size="lg"
+                className="h-12 px-8 text-base"
+                nativeButton={false}
+                render={<Link href="/sign-up" />}
+              >
+                ابدأ التعلم الآن
+                <ChevronLeft className="ms-2 size-4" />
               </Button>
-              <Button size="lg" variant="outline" className="h-12 px-8 text-base" asChild>
-                <Link href="#paths">استكشف المسارات</Link>
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-12 px-8 text-base"
+                nativeButton={false}
+                render={<Link href="#paths" />}
+              >
+                استكشف المسارات
               </Button>
             </div>
           </div>
@@ -121,8 +133,13 @@ export default function Home() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button variant="outline" className="w-full" asChild>
-                    <Link href="/sign-up">التسجيل في المسار</Link>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    nativeButton={false}
+                    render={<Link href="/sign-up" />}
+                  >
+                    التسجيل في المسار
                   </Button>
                 </CardFooter>
               </Card>
@@ -145,8 +162,13 @@ export default function Home() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button variant="outline" className="w-full" asChild>
-                    <Link href="/sign-up">التسجيل في المسار</Link>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    nativeButton={false}
+                    render={<Link href="/sign-up" />}
+                  >
+                    التسجيل في المسار
                   </Button>
                 </CardFooter>
               </Card>
@@ -169,8 +191,13 @@ export default function Home() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button variant="outline" className="w-full" asChild>
-                    <Link href="/sign-up">التسجيل في المسار</Link>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    nativeButton={false}
+                    render={<Link href="/sign-up" />}
+                  >
+                    التسجيل في المسار
                   </Button>
                 </CardFooter>
               </Card>
@@ -187,8 +214,14 @@ export default function Home() {
             سجل الآن وابدأ رحلتك في طلب العلم الشرعي وفق منهجية علمية معتمدة ومتدرجة.
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
-            <Button size="lg" variant="secondary" className="h-12 px-8 text-base text-primary font-semibold" asChild>
-              <Link href="/sign-up">إنشاء حساب جديد</Link>
+            <Button
+              size="lg"
+              variant="secondary"
+              className="h-12 px-8 text-base text-primary font-semibold"
+              nativeButton={false}
+              render={<Link href="/sign-up" />}
+            >
+              إنشاء حساب جديد
             </Button>
           </div>
         </section>

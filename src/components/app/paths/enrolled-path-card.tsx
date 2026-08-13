@@ -7,6 +7,7 @@ import {
   BookOpen,
   CheckCircle2,
   Layers,
+  Lock,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +30,9 @@ import { formatNumber } from "@/utils/format";
  * The next lesson is named rather than implied. "Continue" as a bare button
  * asks the learner to remember where they were; naming the lesson means they
  * do not have to.
+ *
+ * Rendered by both `/dashboard` and `/paths` — one card definition, so the two
+ * screens cannot disagree about a path the learner sees on each of them.
  */
 export function EnrolledPathCard({ path }: { path: EnrolledPath }) {
   return (
@@ -61,6 +65,16 @@ export function EnrolledPathCard({ path }: { path: EnrolledPath }) {
                 <Badge className="border-transparent bg-gold/15 text-gold-foreground dark:text-gold">
                   <Award />
                   شهادة
+                </Badge>
+              ) : null}
+
+              {/* An enrolment outlives its path being unpublished. Saying so is
+                  better than leaving the learner to wonder why the content
+                  stopped changing. */}
+              {path.status === "DRAFT" ? (
+                <Badge variant="secondary">
+                  <Lock />
+                  قيد الإعداد
                 </Badge>
               ) : null}
             </div>

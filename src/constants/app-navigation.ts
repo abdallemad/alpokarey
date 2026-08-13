@@ -20,11 +20,12 @@ export type AppNavItem = {
  * Deliberately short. `business-analysis.md` describes an audience ranging from
  * a curious Muslim to an advanced researcher, and a long nav is a tax on the
  * former. Three destinations answer the three questions a learner has: where
- * am I, what else is there, and what have I earned.
+ * am I, what am I studying, and what have I earned.
  *
- * There is no "my paths" entry: the dashboard **is** the learner's paths, with
- * progress attached, and a second list of the same rows would only invite the
- * question of which one is authoritative.
+ * `/paths` is labelled "مساراتي" rather than "المسارات" because that is what it
+ * lists — the learner's own enrolments and their progress in each, not a public
+ * catalog. The dashboard shows the same paths; this is the screen for searching
+ * and filtering them. See `docs/my-paths-feature.md`.
  */
 export const APP_NAV_ITEMS: AppNavItem[] = [
   {
@@ -35,7 +36,7 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
   },
   {
     href: ROUTES.app.paths,
-    label: "المسارات",
+    label: "مساراتي",
     icon: Route,
   },
   {
@@ -48,7 +49,7 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
 /** Arabic labels for the learner-facing URL segments. */
 export const APP_SEGMENT_LABELS: Record<string, string> = {
   dashboard: "لوحتي",
-  paths: "المسارات",
+  paths: "مساراتي",
   learn: "التعلّم",
   account: "حسابي",
   certificates: "شهاداتي",

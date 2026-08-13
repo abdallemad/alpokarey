@@ -1,4 +1,4 @@
-import type { PathCategory } from "@prisma/client";
+import type { PathCategory, Status } from "@prisma/client";
 
 /**
  * The learner's own view of their learning — what `/dashboard` renders.
@@ -20,24 +20,40 @@ export type NextLesson = {
   stageOrder: number;
 };
 
+/**
+ * Which of the two progress records in the database produced `progress`.
+ *
+ * `"lessons"` — derived from `LessonProgress`, the per-lesson truth.
+ * `"enrollment"` — read from `Enrollment.progress`, because the stored column
+ * is ahead of what the lesson rows can account for.
+ *
+ * See `docs/student-dashboard.md` §5.
+ */
+export type ProgressSource = "lessons" | "enrollment";
+
 export type EnrolledPath = {
   id: string;
   title: string;
   description: string | null;
   imageUrl: string | null;
   category: PathCategory | null;
+  /** A learner can hold an enrolment in a path the admin has not published. */
+  status: Status;
   certificationActivated: boolean;
   stagesCount: number;
   lessonsCount: number;
+  /** Lessons behind `progress` — see `progressSource` for where it came from. */
   completedLessonsCount: number;
   /**
-   * 0–100, **computed** from `LessonProgress` rather than read from
-   * `Enrollment.progress` — see `docs/student-dashboard.md` §5.
+   * 0–100. Reconciled from **both** `LessonProgress` and `Enrollment.progress`
+   * so the card never reports less than the database already records — see
+   * `docs/student-dashboard.md` §5.
    */
   progress: number;
+  progressSource: ProgressSource;
   isCompleted: boolean;
   hasCertificate: boolean;
-  /** `null` once every lesson is done. */
+  /** `null` once the path is finished. */
   nextLesson: NextLesson | null;
   enrolledAt: string;
 };
@@ -50,7 +66,7 @@ export type StudentStats = {
   /** Lessons finished across every enrolled path. */
   completedLessonsCount: number;
   totalLessonsCount: number;
-  /** Mean progress across enrolled paths, 0–100. */
+  /** Progress across every enrolled path, weighted by lesson count, 0–100. */
   overallProgress: number;
 };
 
@@ -85,4 +101,35 @@ export type StudentDashboard = {
   continueLesson: (NextLesson & { pathId: string; pathTitle: string }) | null;
   recentAttempts: StudentAttempt[];
   certificates: StudentCertificate[];
+};
+
+/**
+ * `/paths` — the learner's own enrolled paths.
+ *
+ * Declared by hand rather than derived from the Zod schema: every field is a
+ * plain string so the object makes a stable React Query cache key, which
+ * `z.input<>` cannot guarantee (see `docs/paths-feature.md` §4).
+ */
+export type EnrolledPathsQueryState = {
+  search: string;
+  /** A `PathCategory`, or `"all"`. */
+  category: string;
+  /** `"all" | "in-progress" | "completed" | "not-started"`. */
+  state: string;
+  /** `"progress" | "recent" | "title"`. */
+  sort: string;
+};
+
+export type EnrolledPathsResult = {
+  /** The paths matching the query, already sorted. */
+  paths: EnrolledPath[];
+  /**
+   * Figures over **every** enrolment, not just the matching ones — a summary
+   * that shifted while filtering would be describing the filter, not the
+   * learner.
+   */
+  stats: StudentStats;
+  /** How many enrolments exist in total, so the UI can tell "no enrolments
+   * yet" apart from "no matches for this filter". */
+  totalEnrolled: number;
 };
