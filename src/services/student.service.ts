@@ -14,6 +14,13 @@ import type {
   StudentDashboard,
   StudentStats,
 } from "@/types/student";
+import {
+  isPathComplete,
+  reconcileProgress,
+  toPercent,
+  toProgressPercent,
+} from "@/utils/progress";
+import { toDisplayName } from "@/utils/user";
 import type { EnrolledPathsQuery } from "@/validation/student.schema";
 
 /**
@@ -26,12 +33,6 @@ import type { EnrolledPathsQuery } from "@/validation/student.schema";
 
 /** How many past attempts the dashboard shows. Enough to see a trend. */
 const RECENT_ATTEMPTS_LIMIT = 5;
-
-/** Percentages are integers in 0–100 everywhere they leave this module. */
-function toPercent(value: number): number {
-  if (!Number.isFinite(value)) return 0;
-  return Math.min(100, Math.max(0, Math.round(value)));
-}
 
 function toNextLesson(
   enrollment: StudentEnrollmentRow,
@@ -79,16 +80,13 @@ function toEnrolledPath(
     completed.has(lesson.id),
   ).length;
 
-  // A path with no lessons yet is 0%, not 100%. Dividing by zero would
-  // otherwise congratulate a learner for finishing an empty curriculum.
-  const computedProgress =
-    lessons.length === 0
-      ? 0
-      : toPercent((trackedLessonsCount / lessons.length) * 100);
-  const storedProgress = toPercent(enrollment.progress);
-
-  const usesStoredProgress = storedProgress > computedProgress;
-  const progress = usesStoredProgress ? storedProgress : computedProgress;
+  // Shared with the player and the certificate gate through
+  // `utils/progress.ts`, so one enrolment cannot be 100% on this card and
+  // unfinished at the endpoint that issues its certificate.
+  const { progress, usesStoredProgress } = reconcileProgress(
+    toProgressPercent(trackedLessonsCount, lessons.length),
+    enrollment.progress,
+  );
 
   // With the stored column driving the bar, the "n of m lessons" caption has to
   // follow it — a card reading "0 of 2 lessons · 67%" contradicts itself.
@@ -99,8 +97,11 @@ function toEnrolledPath(
       )
     : trackedLessonsCount;
 
-  const isCompleted =
-    enrollment.isCompleted || (lessons.length > 0 && progress === 100);
+  const isCompleted = isPathComplete({
+    enrollmentIsCompleted: enrollment.isCompleted,
+    lessonsCount: lessons.length,
+    progress,
+  });
 
   return {
     id: enrollment.path.id,
@@ -185,11 +186,6 @@ function toStats(paths: EnrolledPath[], certificatesCount: number): StudentStats
                 paths.length,
             ),
   };
-}
-
-/** The email's local part, for accounts Clerk has no name for. */
-function toDisplayName(user: AppUser): string {
-  return user.name?.trim() || user.email.split("@")[0];
 }
 
 /**

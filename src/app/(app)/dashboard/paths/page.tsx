@@ -8,9 +8,9 @@ import { PageContainer } from "@/components/shared";
 export const metadata: Metadata = { title: "مساراتي" };
 
 /**
- * `/paths` — the learner's own paths.
+ * `/dashboard/paths` — the learner's own paths.
  *
- * A thin Server Component, like `/dashboard`: the data is fetched client-side
+ * A thin Server Component, like `/dashboard/home`: the data is fetched client-side
  * through React Query so finishing a lesson can refresh these figures from
  * cache without a full navigation, once the player lands.
  *

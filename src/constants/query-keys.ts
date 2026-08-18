@@ -52,6 +52,33 @@ export const queryKeys = {
     paths: () => [...queryKeys.student.all, "paths"] as const,
     pathsList: (query: EnrolledPathsQueryState) =>
       [...queryKeys.student.paths(), query] as const,
+    /**
+     * One issued certificate.
+     *
+     * Nested under `student` rather than given a top-level entity of its own,
+     * because a certificate is only ever read as the signed-in learner's — the
+     * endpoint has no form that returns anyone else's. Issuing one invalidates
+     * `queryKeys.student.all`, which catches the dashboard's count and the
+     * certificates list together.
+     */
+    certificate: (certificateId: string) =>
+      [...queryKeys.student.all, "certificate", certificateId] as const,
+  },
+  /**
+   * The player. Keyed by path so finishing a lesson can refresh one curriculum
+   * without touching another, and nested under it so
+   * `invalidateQueries({ queryKey: queryKeys.learn.path(pathId) })` catches the
+   * tree, the open lesson and the open exam in one call.
+   */
+  learn: {
+    all: ["learn"] as const,
+    path: (pathId: string) => [...queryKeys.learn.all, pathId] as const,
+    curriculum: (pathId: string) =>
+      [...queryKeys.learn.path(pathId), "curriculum"] as const,
+    lesson: (pathId: string, lessonId: string) =>
+      [...queryKeys.learn.path(pathId), "lesson", lessonId] as const,
+    quiz: (pathId: string, quizId: string) =>
+      [...queryKeys.learn.path(pathId), "quiz", quizId] as const,
   },
   dashboard: {
     all: ["dashboard"] as const,

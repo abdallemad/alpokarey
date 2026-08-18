@@ -13,7 +13,7 @@ import { useStudentDashboard } from "@/hooks/use-student-dashboard";
 import { formatNumber } from "@/utils/format";
 
 /**
- * `/account/certificates`.
+ * `/dashboard/certificates`.
  *
  * Deliberately backed by the dashboard query rather than one of its own —
  * `queryKeys.student.dashboard()` is already populated when the learner
@@ -66,7 +66,7 @@ export function StudentCertificatesView() {
           <Button
             variant="outline"
             nativeButton={false}
-            render={<Link href={ROUTES.app.dashboard} />}
+            render={<Link href={ROUTES.app.home} />}
           >
             <Route />
             لوحتي

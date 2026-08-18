@@ -24,10 +24,21 @@ export function AppHeader() {
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
   );
 
-  // Unknown segments — a path id, a lesson id — fall back to the section they
-  // sit under rather than dumping a raw UUID at the learner.
-  const segment = pathname.split("/").filter(Boolean)[0] ?? "";
-  const title = active?.label ?? APP_SEGMENT_LABELS[segment] ?? "أكاديمية الإمام البخاري";
+  // Unknown segments — a certificate id, a path id — fall back to the nearest
+  // named section rather than dumping a raw UUID at the learner.
+  //
+  // Scanned from the end, not the start: every learner URL now begins with
+  // `dashboard`, so taking the first segment would label all three screens
+  // "لوحتي". The last segment that has a name is the most specific answer.
+  const title =
+    active?.label ??
+    pathname
+      .split("/")
+      .filter(Boolean)
+      .reverse()
+      .map((segment) => APP_SEGMENT_LABELS[segment])
+      .find(Boolean) ??
+    "أكاديمية الإمام البخاري";
 
   return (
     <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/85 px-3 backdrop-blur-md md:px-4">

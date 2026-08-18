@@ -117,7 +117,7 @@ export function MyPathsView() {
           <Button
             variant="outline"
             nativeButton={false}
-            render={<Link href={ROUTES.app.dashboard} />}
+            render={<Link href={ROUTES.app.home} />}
           >
             <LayoutDashboard />
             لوحتي
@@ -232,7 +232,7 @@ export function MyPathsView() {
                 <Button
                   variant="outline"
                   nativeButton={false}
-                  render={<Link href={ROUTES.app.dashboard} />}
+                  render={<Link href={ROUTES.app.home} />}
                 >
                   <LayoutDashboard />
                   العودة إلى لوحتي

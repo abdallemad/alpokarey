@@ -57,7 +57,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
-              render={<Link href={ROUTES.app.dashboard} />}
+              render={<Link href={ROUTES.app.home} />}
               onClick={handleNavigate}
             >
               <BrandLockup
