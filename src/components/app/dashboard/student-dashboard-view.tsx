@@ -4,7 +4,7 @@ import Link from "next/link";
 import { BookOpen, Route } from "lucide-react";
 
 import { ContinueLearningCard } from "@/components/app/dashboard/continue-learning-card";
-import { EnrolledPathCard } from "@/components/app/dashboard/enrolled-path-card";
+import { EnrolledPathCard } from "@/components/app/paths/enrolled-path-card";
 import {
   EarnedCertificates,
   RecentAttempts,
@@ -53,7 +53,7 @@ export function StudentDashboardView() {
         description={
           hasPaths
             ? "تابع مسيرتك العلمية من حيث توقفت."
-            : "ابدأ رحلتك بالتسجيل في أول مسار."
+            : "ستبدأ رحلتك فور تسجيلك في أول مسار."
         }
         actions={
           <Button
@@ -62,7 +62,7 @@ export function StudentDashboardView() {
             render={<Link href={ROUTES.app.paths} />}
           >
             <Route />
-            تصفّح المسارات
+            مساراتي
           </Button>
         }
       />
@@ -85,19 +85,13 @@ export function StudentDashboardView() {
         ) : (
           <Card>
             <CardContent className="px-0">
+              {/* No enrol action yet — the catalog and its "التسجيل في المسار"
+                  button are still to be built, so promising one here would be
+                  a button that goes nowhere. See docs/my-paths-feature.md §9. */}
               <EmptyState
                 icon={BookOpen}
                 title="لم تسجّل في أي مسار بعد"
-                description="اختر مسارًا يناسب مستواك واهتمامك، وابدأ أول درس اليوم."
-                action={
-                  <Button
-                    nativeButton={false}
-                    render={<Link href={ROUTES.app.paths} />}
-                  >
-                    <Route />
-                    تصفّح المسارات
-                  </Button>
-                }
+                description="حين تسجّل في مسار ستجد هنا مراحله ودروسه وتقدّمك فيه، وأول درس في انتظارك."
               />
             </CardContent>
           </Card>

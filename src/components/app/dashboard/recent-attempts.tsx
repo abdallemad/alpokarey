@@ -1,8 +1,10 @@
-import { Award, CheckCircle2, XCircle } from "lucide-react";
+import Link from "next/link";
+import { Award, CheckCircle2, ChevronLeft, XCircle } from "lucide-react";
 
 import { EmptyState } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ROUTES } from "@/constants/routes";
 import type { StudentAttempt, StudentCertificate } from "@/types/student";
 import { formatDate, formatNumber } from "@/utils/format";
 
@@ -89,7 +91,14 @@ export function RecentAttempts({ attempts }: { attempts: StudentAttempt[] }) {
   );
 }
 
-/** Certificates earned, newest first. */
+/**
+ * Certificates earned, newest first.
+ *
+ * Each row links to the certificate itself. Before
+ * `docs/certificates-feature.md` there was nowhere for it to point, so the
+ * rows were inert text; now that the document has a page, a list of
+ * achievements you cannot open would be the odd thing.
+ */
 export function EarnedCertificates({
   certificates,
 }: {
@@ -111,21 +120,24 @@ export function EarnedCertificates({
         ) : (
           <ul className="divide-y divide-border">
             {certificates.map((certificate) => (
-              <li
-                key={certificate.id}
-                className="flex items-center gap-3 px-4 py-3"
-              >
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-gold/15 text-gold-foreground dark:text-gold">
-                  <Award className="size-4" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {certificate.pathTitle}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    مُنحت في {formatDate(certificate.issuedAt)}
-                  </p>
-                </div>
+              <li key={certificate.id}>
+                <Link
+                  href={ROUTES.app.certificate(certificate.id)}
+                  className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted"
+                >
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-gold/15 text-gold-foreground dark:text-gold">
+                    <Award className="size-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {certificate.pathTitle}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      مُنحت في {formatDate(certificate.issuedAt)}
+                    </p>
+                  </div>
+                  <ChevronLeft className="size-4 shrink-0 text-muted-foreground" />
+                </Link>
               </li>
             ))}
           </ul>

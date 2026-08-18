@@ -36,6 +36,20 @@ export class ForbiddenError extends AppError {
   }
 }
 
+/**
+ * A signed-in learner asking for a path they have not enrolled in.
+ *
+ * A 403 like `ForbiddenError`, but with its own code: `ForbiddenError` means
+ * "this is an admin area", and the shared `ApiErrorState` says exactly that.
+ * Reusing it here would tell a student they need admin permission to open a
+ * course, which is both wrong and alarming.
+ */
+export class NotEnrolledError extends AppError {
+  constructor(message = "يجب التسجيل في هذا المسار قبل الدخول إلى دروسه") {
+    super(message, 403, "NOT_ENROLLED");
+  }
+}
+
 export class NotFoundError extends AppError {
   constructor(message = "العنصر المطلوب غير موجود") {
     super(message, 404, "NOT_FOUND");

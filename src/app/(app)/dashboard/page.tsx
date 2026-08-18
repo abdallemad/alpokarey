@@ -1,21 +1,24 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { StudentDashboardView } from "@/components/app/dashboard/student-dashboard-view";
-import { PageContainer } from "@/components/shared";
-
-export const metadata: Metadata = { title: "لوحتي" };
+import { ROUTES } from "@/constants/routes";
 
 /**
- * `/dashboard` — the learner's home.
+ * `/dashboard` — not a screen, a signpost.
  *
- * A thin Server Component: the data is fetched client-side through React Query
- * so that finishing a lesson can refresh these figures from cache without a
- * full navigation, once the player lands.
+ * The learner section is three sibling pages under one prefix
+ * (`home`, `paths`, `certificates`) rather than a page at `/dashboard` with two
+ * children. That keeps the three destinations symmetrical: none of them is
+ * secretly the parent of the others, and adding a fourth is a folder rather
+ * than a decision about what the prefix "really" means.
+ *
+ * The cost is that the bare prefix has to resolve to something, because links
+ * to it exist — the sidebar brand lockup, the sign-in redirect, and any
+ * bookmark made before the restructure. It resolves here, and this sends the
+ * learner to the page that answers "where was I?".
+ *
+ * A redirect rather than a rewrite, so the address bar ends up saying what the
+ * learner is actually looking at.
  */
-export default function StudentDashboardPage() {
-  return (
-    <PageContainer>
-      <StudentDashboardView />
-    </PageContainer>
-  );
+export default function DashboardIndexPage() {
+  redirect(ROUTES.app.home);
 }

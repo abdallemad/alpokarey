@@ -55,7 +55,7 @@ export async function GET(request: Request) {
     // Students now land on their own dashboard rather than the marketing home,
     // because it is the page that tells them what to do next.
     const destination =
-      user.role === "ADMIN" ? ROUTES.admin.dashboard : ROUTES.app.dashboard;
+      user.role === "ADMIN" ? ROUTES.admin.dashboard : ROUTES.app.home;
 
     return NextResponse.redirect(new URL(destination, request.url));
   } catch (error) {

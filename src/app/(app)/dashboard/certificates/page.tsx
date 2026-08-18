@@ -6,7 +6,7 @@ import { PageContainer } from "@/components/shared";
 export const metadata: Metadata = { title: "شهاداتي" };
 
 /**
- * `/account/certificates` — the learner's certificates.
+ * `/dashboard/certificates` — the learner's certificates.
  *
  * Reads the same `/api/me/dashboard` payload the dashboard does rather than
  * adding an endpoint: the certificate list is already in it, React Query has

@@ -114,6 +114,37 @@ export const quizListQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(10),
 });
 
+/**
+ * Submitting an attempt — what a student sends when they finish an exam.
+ *
+ * One option per question, and **at most one row per question**: `QuizAnswer`
+ * has a `@@unique([quizAttemptId, questionId])`, so a duplicate would fail at
+ * the database with a Prisma error rather than a readable message. The refine
+ * catches it here instead.
+ *
+ * Unanswered questions are simply absent rather than rejected. The runner does
+ * not let a learner submit an incomplete exam, but the endpoint is the contract
+ * the mobile client will use too, and grading an omission as wrong is both
+ * obvious and safe — refusing the whole submission would throw away the answers
+ * the learner did give.
+ */
+export const quizAttemptSubmitSchema = z.object({
+  answers: z
+    .array(
+      z.object({
+        questionId: z.uuid("معرّف السؤال غير صالح"),
+        optionId: z.uuid("معرّف الإجابة غير صالح"),
+      }),
+    )
+    .max(200, "عدد الإجابات أكبر من المتوقع")
+    .refine(
+      (answers) =>
+        new Set(answers.map((answer) => answer.questionId)).size ===
+        answers.length,
+      "لا يمكن إرسال أكثر من إجابة للسؤال الواحد",
+    ),
+});
+
 export type QuizCreateInput = z.input<typeof quizCreateSchema>;
 export type QuizCreateValues = z.output<typeof quizCreateSchema>;
 export type QuizUpdateInput = z.input<typeof quizUpdateSchema>;
@@ -121,3 +152,5 @@ export type QuizUpdateValues = z.output<typeof quizUpdateSchema>;
 export type QuizListQuery = z.output<typeof quizListQuerySchema>;
 export type QuizSortOption = (typeof QUIZ_SORT_OPTIONS)[number];
 export type QuizKindFilter = (typeof QUIZ_KINDS)[number];
+export type QuizAttemptSubmitInput = z.input<typeof quizAttemptSubmitSchema>;
+export type QuizAttemptSubmitValues = z.output<typeof quizAttemptSubmitSchema>;

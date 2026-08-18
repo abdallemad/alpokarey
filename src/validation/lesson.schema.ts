@@ -183,6 +183,18 @@ export const attachmentCreateSchema = z
     }
   });
 
+/**
+ * Marking a lesson complete — or undoing it.
+ *
+ * A single boolean rather than a bare "complete" action, because the learner
+ * has to be able to take it back: the button is a toggle, a mis-click on it
+ * changes the percentage on their dashboard, and an endpoint that can only ever
+ * move progress forward would leave them no way to correct it.
+ */
+export const lessonProgressSchema = z.object({
+  isCompleted: z.boolean(),
+});
+
 export type LessonCreateInput = z.input<typeof lessonCreateSchema>;
 export type LessonCreateValues = z.output<typeof lessonCreateSchema>;
 export type LessonUpdateInput = z.input<typeof lessonUpdateSchema>;
@@ -191,3 +203,4 @@ export type LessonListQuery = z.output<typeof lessonListQuerySchema>;
 export type LessonSortOption = (typeof LESSON_SORT_OPTIONS)[number];
 export type AttachmentCreateInput = z.input<typeof attachmentCreateSchema>;
 export type AttachmentCreateValues = z.output<typeof attachmentCreateSchema>;
+export type LessonProgressValues = z.output<typeof lessonProgressSchema>;

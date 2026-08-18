@@ -18,11 +18,18 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <div className="hidden sm:flex gap-2">
-            <Button variant="ghost" asChild>
-              <Link href="/sign-in">تسجيل الدخول</Link>
+            {/* Base UI, not Radix: a Button that renders an anchor takes
+                `render` plus `nativeButton={false}` — see
+                docs/paths-feature.md §13. */}
+            <Button
+              variant="ghost"
+              nativeButton={false}
+              render={<Link href="/sign-in" />}
+            >
+              تسجيل الدخول
             </Button>
-            <Button asChild>
-              <Link href="/sign-up">ابدأ الآن</Link>
+            <Button nativeButton={false} render={<Link href="/sign-up" />}>
+              ابدأ الآن
             </Button>
           </div>
         </div>
