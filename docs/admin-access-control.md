@@ -117,6 +117,25 @@ message.
 Every `/api/paths` handler calls it first — including `GET`. Read access to the
 console's data is itself privileged.
 
+### The role can now be changed from the console
+
+`/admin/users` is the screen for it — see
+[`users-feature.md`](./users-feature.md). Three things about it belong here:
+
+- **It writes `User.role`, which is the authority.** Nothing else about an
+  account is editable in the console; everything else is mirrored from Clerk.
+- **It refuses two changes**: an admin changing their own role, and demoting the
+  last remaining administrator. Both would end with nobody able to administer
+  the academy.
+- **It mirrors the new role into Clerk's `publicMetadata`** — the first write
+  this app makes to Clerk, best-effort and non-fatal. `requireAdmin()` still
+  reads only the local column, so a failed mirror leaves authorisation correct
+  and the "لوحة التحكم" shortcut stale.
+
+The `ADMIN_EMAILS` rule in §3 outranks a demotion made here: an allowlisted
+address is promoted again on its next sign-in. The panel says so before the
+button is pressed rather than letting an admin discover it afterwards.
+
 ### What the client does with it
 
 `ApiErrorState` (`components/admin/shared/api-error-state.tsx`) branches on

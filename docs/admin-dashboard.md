@@ -16,7 +16,7 @@
 |---|---|
 | Direction | The whole app switched from `dir="ltr"` to **`dir="rtl"`**, Arabic-first |
 | Shell | `(admin)` route group with a collapsible sidebar and a sticky header |
-| Navigation | Sidebar, breadcrumbs, and a ⌘K command menu — all from one config |
+| Navigation | Sidebar and breadcrumbs — both from one config |
 | Responsive | Icon rail on desktop, drawer below `md`, columns shed progressively |
 | Loading | `loading.tsx` per segment, shaped like the content it replaces |
 | Errors | Segment boundary with `retry`, an admin `not-found`, a `global-error` |
@@ -106,14 +106,14 @@ navigation.
 ### Navigation source of truth
 
 The sidebar renders from `constants/admin-navigation.ts`, and so do the
-breadcrumb labels and the command menu. Adding a section is a single entry:
+breadcrumb labels. Adding a section is a single entry:
 
 ```ts
 {
   href: ROUTES.admin.paths,
   label: "المسارات",
   icon: Route,
-  keywords: ["paths", "tracks", "masarat"],   // command-menu matches
+  keywords: ["paths", "tracks", "masarat"],   // reserved for search
 }
 ```
 
@@ -146,14 +146,13 @@ while Clerk boots, a sign-in link when there is no session, and the account menu
 
 ## 5. Header — `components/admin/layout/admin-header.tsx`
 
-A **Server Component**. It holds no state, so only its three interactive
+A **Server Component**. It holds no state, so only its two interactive
 children ship JavaScript.
 
 | Element | Behaviour |
 |---|---|
 | `SidebarTrigger` | Collapses the rail on desktop, opens the drawer on mobile (⌘/Ctrl+B) |
 | `AdminBreadcrumbs` | Derived from `usePathname()` |
-| `AdminCommandMenu` | ⌘K / Ctrl+K palette over the nav config |
 | `ThemeToggle` | Light / dark / system |
 
 It is `sticky top-0`, not `fixed`, so it never overlaps content.
@@ -166,22 +165,14 @@ resolve through `ADMIN_SEGMENT_LABELS`; anything unknown — a UUID — renders 
 `تفاصيل` rather than dumping a raw ID at the user. The separator is a
 `ChevronLeft`, because in RTL the trail advances leftward.
 
-### Command menu
-
-Entries come from the same nav config, so the palette cannot drift from the
-sidebar. `keywords` let an admin type `paths` or `masarat` and still find
-`المسارات`. The modifier label is resolved after mount (`⌘` on Apple, `Ctrl`
-elsewhere) rather than guessed — verified rendering `Ctrl K` on Windows.
-K was chosen because Ctrl+B already toggles the sidebar.
-
 ---
 
 ## 6. Responsive behaviour
 
 | Width | Sidebar | Header | Tables |
 |---|---|---|---|
-| `< 768px` | Off-canvas `Sheet` drawer, opens from the right; closes on navigation | Breadcrumbs show current page only; search collapses to an icon | Title + status + row menu |
-| `≥ 768px` (`md`) | Persistent, collapsible to a 3rem icon rail with tooltips | Full trail; search becomes a 14rem field with its shortcut | `+ التصنيف` |
+| `< 768px` | Off-canvas `Sheet` drawer, opens from the right; closes on navigation | Breadcrumbs show current page only | Title + status + row menu |
+| `≥ 768px` (`md`) | Persistent, collapsible to a 3rem icon rail with tooltips | Full trail | `+ التصنيف` |
 | `≥ 1024px` (`lg`) | — | — | `+ المراحل، التسجيلات` |
 | `≥ 1280px` (`xl`) | — | — | `+ تاريخ الإنشاء` |
 
@@ -327,7 +318,6 @@ components/
     │   ├── admin-sidebar.tsx
     │   ├── admin-header.tsx
     │   ├── admin-breadcrumbs.tsx
-    │   ├── admin-command-menu.tsx
     │   ├── admin-user-menu.tsx
     │   └── index.ts
     │
@@ -379,7 +369,7 @@ shell, but every request inside it returns 401/403, so no data leaks. See
 - `npx next build` — clean; 14 routes.
 - Rendered on a production build: sidebar groups, active state (`data-active` on
   the current section with the accent background), breadcrumb trail, metadata
-  template, theme toggle, command menu.
+  template, theme toggle.
 - Sidebar collapse measured at 256px → 48px with content expanding to fill.
 - Mobile: below 768px the sidebar becomes a closed drawer.
 - No console errors; no horizontal overflow.

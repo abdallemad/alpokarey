@@ -24,7 +24,7 @@
 - [`stages-feature.md`](./stages-feature.md) — the same pattern with `order`, grouped by parent path, and paginated by path so a group is never split
 - [`lessons-feature.md`](./lessons-feature.md) — the same pattern with a content-type switch (video/text), a full-page editor, and file attachments backed by `lib/storage.ts`
 - [`quizzes-feature.md`](./quizzes-feature.md) — the same pattern, organised around whether an exam is a stage's final or a lesson's (questions still read-only)
-- [`users-feature.md`](./users-feature.md) — read-first: accounts mirrored from Clerk, with the STUDENT/ADMIN role guard
+- [`users-feature.md`](./users-feature.md) — `/admin/users`: the accounts table with search, role filter, sorting and pagination, the detail sheet, and the one write the console owns — the STUDENT/ADMIN role
 - [`database-seeding.md`](./database-seeding.md) — mock data for development
 
 ## Overview
@@ -187,7 +187,9 @@ app/
 │   │       └── [certificateId]/
 │   │           └── route.ts    # GET — one certificate, owner-scoped
 │   ├── users/
-│   │   └── route.ts
+│   │   ├── route.ts            # GET (list) — users-feature.md
+│   │   └── [userId]/
+│   │       └── route.ts        # GET (one) / PATCH (role only)
 │   └── webhooks/
 │       └── clerk/
 │           └── route.ts        # keeps User in sync with Clerk
