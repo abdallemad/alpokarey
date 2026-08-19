@@ -1,6 +1,16 @@
 import type { UserRole } from "@prisma/client";
+import { clerkClient } from "@clerk/nextjs/server";
 
-import { userRepository, type AppUser } from "@/repositories/user.repository";
+import { ConflictError, NotFoundError } from "@/lib/errors";
+import {
+  userRepository,
+  type AppUser,
+  type UserDetailRow,
+  type UserListRow,
+} from "@/repositories/user.repository";
+import type { Paginated } from "@/types/api";
+import type { UserDetail, UserListItem } from "@/types/user";
+import type { UserListQuery } from "@/validation/user.schema";
 
 export type ClerkProfile = {
   clerkId: string;
@@ -76,7 +86,173 @@ export const userService = {
 
     return userRepository.create({ clerkId, email, name, imageUrl, role });
   },
+
+  /* ---------------------------------------------------------------------- */
+  /*  The users console — /admin/users                                       */
+  /* ---------------------------------------------------------------------- */
+
+  async listUsers(query: UserListQuery): Promise<Paginated<UserListItem>> {
+    const { page, pageSize } = query;
+
+    const { rows, total } = await userRepository.findMany({
+      search: query.search || undefined,
+      role: query.role === "all" ? undefined : query.role,
+      sort: query.sort,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+
+    return {
+      items: rows.map(toListItem),
+      page,
+      pageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    };
+  },
+
+  /**
+   * One account, for the detail panel.
+   *
+   * `actor` is not a filter — an admin may read any account — it is there so
+   * the response can say whether this row is **their own**, which is the one
+   * account whose role they may not change. Deciding that here rather than in
+   * the component means the button and the endpoint agree by construction.
+   */
+  async getUser(actor: AppUser, userId: string): Promise<UserDetail> {
+    const row = await userRepository.findDetailById(userId);
+
+    if (!row) {
+      throw new NotFoundError("الحساب المطلوب غير موجود");
+    }
+
+    return toDetail(row, actor);
+  },
+
+  /**
+   * Promote an account to ADMIN, or return it to STUDENT.
+   *
+   * **The only write the console makes to a user.** Everything else about an
+   * account is mirrored from Clerk on sign-in, and overwriting any of it here
+   * would be overwritten back on their next visit.
+   *
+   * Three refusals, in order:
+   *
+   * 1. **You cannot change your own role.** An admin who demotes themselves is
+   *    locked out of the console that would let them undo it. The UI disables
+   *    the control, and this is why it can be trusted to.
+   * 2. **The last administrator cannot be demoted.** An academy with no admin
+   *    has no way back in short of editing the database by hand — the same
+   *    reasoning that makes `syncFromClerk` bootstrap the first account.
+   * 3. **A missing account is a 404**, checked before either of the above so a
+   *    stale panel gets the honest answer.
+   *
+   * Setting the role an account already holds is a **no-op**, not an error: two
+   * tabs, a double click and a stale cache all end in the same state.
+   */
+  async updateRole(
+    actor: AppUser,
+    userId: string,
+    role: UserRole,
+  ): Promise<UserDetail> {
+    const target = await userRepository.findDetailById(userId);
+
+    if (!target) {
+      throw new NotFoundError("الحساب المطلوب غير موجود");
+    }
+
+    if (target.id === actor.id) {
+      throw new ConflictError(
+        "لا يمكنك تغيير صلاحية حسابك. اطلب من مشرفٍ آخر القيام بذلك.",
+      );
+    }
+
+    if (target.role === role) {
+      return toDetail(target, actor);
+    }
+
+    if (target.role === "ADMIN" && role === "STUDENT") {
+      const admins = await userRepository.countByRole("ADMIN");
+
+      if (admins <= 1) {
+        throw new ConflictError(
+          "لا يمكن تحويل آخر مشرف إلى طالب — يجب أن يبقى للأكاديمية مشرف واحد على الأقل.",
+        );
+      }
+    }
+
+    await userRepository.update(target.id, { role });
+    await syncRoleToClerk(target.clerkId, role);
+
+    // Re-read rather than patching the row in memory: the panel renders the
+    // result, and one shape from one query cannot disagree with itself.
+    const updated = await userRepository.findDetailById(target.id);
+
+    return toDetail(updated ?? target, actor);
+  },
 };
+
+/* -------------------------------------------------------------------------- */
+/*  DTO mapping                                                                */
+/* -------------------------------------------------------------------------- */
+
+function toListItem(row: UserListRow): UserListItem {
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    imageUrl: row.imageUrl,
+    role: row.role,
+    enrollmentsCount: row._count.enrollments,
+    certificatesCount: row._count.certificates,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+function toDetail(row: UserDetailRow, actor: AppUser): UserDetail {
+  return {
+    ...toListItem(row),
+    updatedAt: row.updatedAt.toISOString(),
+    completedLessonsCount: row._count.lessonProgress,
+    quizAttemptsCount: row._count.quizAttempts,
+    paths: row.enrollments.map((enrollment) => ({
+      id: enrollment.path.id,
+      title: enrollment.path.title,
+      progress: enrollment.progress,
+      isCompleted: enrollment.isCompleted,
+      enrolledAt: enrollment.createdAt.toISOString(),
+    })),
+    isAllowlistedAdmin: isAllowlistedAdmin(row.email),
+    isSelf: row.id === actor.id,
+  };
+}
+
+/**
+ * Mirror the new role into Clerk's `publicMetadata`.
+ *
+ * **Best effort, and deliberately not fatal.** The local `User.role` column is
+ * the authority — `requireAdmin()` reads it and nothing else — so a failed
+ * Clerk write leaves authorisation correct and one convenience stale. Throwing
+ * instead would mean a promotion that succeeded in the database reported itself
+ * as a failure, and the admin would press the button again on a row that is
+ * already correct.
+ *
+ * What the copy buys: the learner shell reads `publicMetadata.role` to decide
+ * whether to show the "لوحة التحكم" shortcut, and the marketing header does the
+ * same. Without this write a freshly promoted admin would have to type `/admin`
+ * by hand. See `docs/admin-access-control.md` §5.
+ */
+async function syncRoleToClerk(clerkId: string, role: UserRole): Promise<void> {
+  try {
+    const client = await clerkClient();
+
+    await client.users.updateUserMetadata(clerkId, {
+      publicMetadata: { role },
+    });
+  } catch (error) {
+    console.error("[users] failed to mirror role to Clerk", { clerkId, error });
+  }
+}
 
 function elevateRole(current: UserRole, email: string): UserRole {
   if (current === "ADMIN") return "ADMIN";

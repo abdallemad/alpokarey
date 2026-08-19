@@ -2,6 +2,7 @@ import type { LessonsQueryState } from "@/types/lesson";
 import type { PathsQueryState, PublicPathsQueryState } from "@/types/path";
 import type { QuizzesQueryState } from "@/types/quiz";
 import type { StagesQueryState } from "@/types/stage";
+import type { UsersQueryState } from "@/types/user";
 import type { EnrolledPathsQueryState } from "@/types/student";
 
 /**
@@ -107,6 +108,21 @@ export const queryKeys = {
       [...queryKeys.learn.path(pathId), "lesson", lessonId] as const,
     quiz: (pathId: string, quizId: string) =>
       [...queryKeys.learn.path(pathId), "quiz", quizId] as const,
+  },
+  /**
+   * The accounts console.
+   *
+   * `detail` sits under the same root as `lists` so promoting someone can
+   * invalidate `queryKeys.users.all` and refresh both the open panel and the
+   * table behind it — the role badge in the row has to move with the panel.
+   */
+  users: {
+    all: ["users"] as const,
+    lists: () => [...queryKeys.users.all, "list"] as const,
+    list: (query: UsersQueryState) =>
+      [...queryKeys.users.lists(), query] as const,
+    details: () => [...queryKeys.users.all, "detail"] as const,
+    detail: (userId: string) => [...queryKeys.users.details(), userId] as const,
   },
   dashboard: {
     all: ["dashboard"] as const,
