@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShieldCheck } from "lucide-react";
+import { House, ShieldCheck } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 
 import { AccountMenu, BrandLockup } from "@/components/shared";
@@ -96,8 +96,8 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        {isAdmin ? (
-          <SidebarMenu>
+        <SidebarMenu>
+          {isAdmin ? (
             <SidebarMenuItem>
               <SidebarMenuButton
                 tooltip={{ children: "لوحة التحكم", side: "inline-end" }}
@@ -108,8 +108,23 @@ export function AppSidebar() {
                 <span>لوحة التحكم</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
-          </SidebarMenu>
-        ) : null}
+          ) : null}
+
+          {/* The same way out the admin console has had all along. A learner
+              inside the dashboard shell has no other route back to the public
+              site: the brand lockup above goes to `/dashboard/home`, and the
+              site header is not rendered in this shell at all. */}
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip={{ children: "العودة إلى الموقع", side: "inline-end" }}
+              render={<Link href={ROUTES.home} />}
+              onClick={handleNavigate}
+            >
+              <House />
+              <span>العودة إلى الموقع</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
 
         <AccountMenu signOutRedirect={ROUTES.home} />
       </SidebarFooter>

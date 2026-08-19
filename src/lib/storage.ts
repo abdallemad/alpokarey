@@ -8,7 +8,7 @@ import {
   UPLOAD_MIME_EXTENSIONS,
 } from "@/constants/upload";
 import { ValidationError } from "@/lib/errors";
-import type { UploadedFile } from "@/types/lesson";
+import type { UploadedFile } from "@/types/upload";
 
 /**
  * Where uploaded files live.

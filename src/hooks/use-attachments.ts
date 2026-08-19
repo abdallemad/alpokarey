@@ -5,7 +5,8 @@ import { toast } from "sonner";
 
 import { apiRequest, type ApiRequestError } from "@/lib/axios";
 import { queryKeys } from "@/constants/query-keys";
-import type { LessonAttachment, UploadedFile } from "@/types/lesson";
+import { uploadFile } from "@/hooks/use-upload";
+import type { LessonAttachment } from "@/types/lesson";
 
 /**
  * What the attachment form hands over: either a file to upload or a note to
@@ -22,22 +23,11 @@ export type AttachmentDraft =
  * Two requests, one action. `POST /api/uploads` knows nothing about lessons
  * and `POST /api/lessons/:id/attachments` knows nothing about bytes; chaining
  * them here is what keeps that separation from leaking into the UI.
+ *
+ * The upload half now lives in `hooks/use-upload.ts`, because the path form
+ * needs the identical request for a cover image and a second copy of the
+ * FormData-and-header dance is a second place to get it wrong.
  */
-async function uploadFile(file: File): Promise<UploadedFile> {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  return apiRequest<UploadedFile>({
-    url: "/uploads",
-    method: "POST",
-    data: formData,
-    // The shared client defaults to `application/json`, and axios turns a
-    // FormData body into JSON when it sees that content type. Clearing the
-    // header lets the browser set `multipart/form-data` with its boundary.
-    headers: { "Content-Type": null },
-  });
-}
-
 export function useAddAttachment(lessonId: string) {
   const queryClient = useQueryClient();
 

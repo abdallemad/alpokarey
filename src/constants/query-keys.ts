@@ -1,5 +1,5 @@
 import type { LessonsQueryState } from "@/types/lesson";
-import type { PathsQueryState } from "@/types/path";
+import type { PathsQueryState, PublicPathsQueryState } from "@/types/path";
 import type { QuizzesQueryState } from "@/types/quiz";
 import type { StagesQueryState } from "@/types/stage";
 import type { EnrolledPathsQueryState } from "@/types/student";
@@ -21,13 +21,19 @@ export const queryKeys = {
     detail: (pathId: string) =>
       [...queryKeys.paths.details(), pathId] as const,
     /**
-     * The public catalog on the landing page.
+     * The public catalog — `/paths`, and the teaser on `/`.
      *
-     * Its own key rather than a `list({ status: "PUBLISHED" })`: it comes from
+     * Its own branch rather than `list({ status: "PUBLISHED" })`: it comes from
      * a different endpoint with a different shape, and an admin publishing a
      * path should invalidate `queryKeys.paths.all`, which still catches it.
+     *
+     * `published()` is the parent of every catalog query, so the teaser and
+     * each filter combination of `/paths` are separate cache entries under one
+     * key that a single `invalidateQueries` can sweep.
      */
     published: () => [...queryKeys.paths.all, "published"] as const,
+    publishedList: (query: PublicPathsQueryState) =>
+      [...queryKeys.paths.published(), query] as const,
     /**
      * One path as `/paths/:pathId` shows it, viewer state included.
      *

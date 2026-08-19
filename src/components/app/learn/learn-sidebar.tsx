@@ -71,7 +71,7 @@ export function LearnSidebar({ curriculum }: { curriculum: LearnCurriculum }) {
 
         <div className="space-y-2">
           <Link
-            href={ROUTES.app.path(path.id)}
+            href={ROUTES.path(path.id)}
             onClick={handleNavigate}
             className="block font-heading text-sm font-bold hover:underline"
           >

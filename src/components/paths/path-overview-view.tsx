@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -28,6 +29,7 @@ import { usePathOverview } from "@/hooks/use-path-overview";
 import { cn } from "@/lib/utils";
 import type { PathOverview } from "@/types/path";
 import { formatNumber } from "@/utils/format";
+import { isStoredUploadPath } from "@/utils/upload";
 import { toYouTubeEmbedUrl } from "@/utils/video";
 
 /**
@@ -73,7 +75,7 @@ export function PathOverviewView({ pathId }: { pathId: string }) {
         size="sm"
         className="-ms-2.5 text-muted-foreground"
         nativeButton={false}
-        render={<Link href={`${ROUTES.home}#paths`} />}
+        render={<Link href={ROUTES.paths} />}
       >
         {/* Back points right in RTL — design-system.md §10. */}
         <ArrowRight />
@@ -145,6 +147,25 @@ export function PathOverviewView({ pathId }: { pathId: string }) {
                 referrerPolicy="strict-origin-when-cross-origin"
                 allowFullScreen
                 className="absolute inset-0 size-full border-0"
+              />
+            </AspectRatio>
+          ) : data.imageUrl ? (
+            // No promo video, but a cover exists. The card the visitor clicked
+            // showed them this picture; opening the path and finding it gone
+            // reads as a page that failed to load rather than one without a
+            // video. `unoptimized` for the same reason as the card — see
+            // `docs/path-cover-images.md` §7.
+            <AspectRatio
+              ratio={16 / 9}
+              className="overflow-hidden rounded-xl bg-muted ring-1 ring-foreground/10"
+            >
+              <Image
+                src={data.imageUrl}
+                alt=""
+                fill
+                sizes="(min-width: 1024px) 768px, 100vw"
+                className="object-cover"
+                unoptimized={!isStoredUploadPath(data.imageUrl)}
               />
             </AspectRatio>
           ) : null}

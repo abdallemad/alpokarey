@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { isStoredUploadPath } from "@/utils/upload";
+
 /**
  * The single source of truth for Path rules.
  *
@@ -27,6 +29,34 @@ const optionalUrl = z
   .nullish()
   .transform((value) => (value ? value : null));
 
+/**
+ * A path's cover image: an uploaded object, or a link to one elsewhere.
+ *
+ * Not `optionalUrl`. Since the admin form became a file upload, the value it
+ * produces is `/uploads/<key>` — a **relative** path, which `z.url()` rejects
+ * outright. Both forms have to be accepted:
+ *
+ * - **`/uploads/<key>`** is what `storage.save()` returns today.
+ * - **An absolute URL** is what existing rows hold (Cloudinary links entered
+ *   before the upload field existed), and rejecting those would mean an admin
+ *   could not save an unrelated edit to any of those paths without first
+ *   re-uploading the image.
+ *
+ * One `refine` with one message rather than a `z.union`, whose branch errors
+ * would surface as two contradictory complaints under a single field.
+ */
+const coverImage = z
+  .string()
+  .nullish()
+  .transform((value) => (value ? value : null))
+  .refine(
+    (value) =>
+      value === null ||
+      isStoredUploadPath(value) ||
+      z.url().safeParse(value).success,
+    "صورة الغلاف يجب أن تكون ملفًا مرفوعًا أو رابطًا صحيحًا",
+  );
+
 export const pathCreateSchema = z.object({
   title: z
     .string()
@@ -48,7 +78,7 @@ export const pathCreateSchema = z.object({
   status: z.enum(PATH_STATUSES).default("DRAFT"),
   isFeatured: z.boolean().default(false),
   certificationActivated: z.boolean().default(false),
-  imageUrl: optionalUrl,
+  imageUrl: coverImage,
   promoUrl: optionalUrl,
 });
 
@@ -90,3 +120,50 @@ export type PathListQueryInput = z.input<typeof pathListQuerySchema>;
 export const pathIdParamSchema = z.object({
   pathId: z.uuid("معرّف المسار غير صالح"),
 });
+
+/* -------------------------------------------------------------------------- */
+/*  The public catalog                                                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * How the catalog may be ordered.
+ *
+ * `featured` is the default and the only one with an editorial opinion in it:
+ * `isFeatured` is the admin's own "show this one" switch, and a visitor with no
+ * preference should see what the academy is putting forward. The other two are
+ * the visitor's own orderings.
+ *
+ * No "most enrolled" option, deliberately. `PublicPathSummary` carries no
+ * enrolment figures — see `types/path.ts` — and a sort that ranks by a number
+ * the page will not print is a sort nobody can check.
+ */
+export const PUBLIC_PATH_SORTS = ["featured", "newest", "title"] as const;
+
+/**
+ * Query string for `GET /api/paths/published` — the public catalog.
+ *
+ * This is the one **unauthenticated** query in the API, so every field is
+ * closed rather than open: two enums, a length-capped string, and a `pageSize`
+ * with a ceiling. There is no `status` field at all — the repository hard-codes
+ * `PUBLISHED`, so no combination of parameters can reach a draft. That is what
+ * makes it safe to accept parameters here at all; see
+ * `docs/tracks-catalog-feature.md` §5.
+ *
+ * `certification` mirrors the admin schema's `featured`: a tri-state string
+ * because a query string has no booleans, with `"all"` as the explicit
+ * "no filter" token.
+ */
+export const publicPathsQuerySchema = z.object({
+  search: z.string().trim().max(120).optional(),
+  category: z.enum([...PATH_CATEGORIES, "all"]).default("all"),
+  certification: z.enum(["true", "false", "all"]).default("all"),
+  sort: z.enum(PUBLIC_PATH_SORTS).default("featured"),
+  page: z.coerce.number().int().min(1).default(1),
+  // Nine fills the 3×3 grid the catalog renders at `lg`. The ceiling is 24 so a
+  // future mobile client can ask for a longer scroll without being able to ask
+  // for the entire table.
+  pageSize: z.coerce.number().int().min(1).max(24).default(9),
+});
+
+export type PublicPathsQuery = z.output<typeof publicPathsQuerySchema>;
+export type PublicPathSort = (typeof PUBLIC_PATH_SORTS)[number];

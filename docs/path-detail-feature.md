@@ -106,15 +106,23 @@ group.
 `ROUTES.app.path(pathId)` was already in the route map pointing at
 `/paths/:pathId`, so nothing that linked here had to change.
 
-### The consequence: the marketing shell now wraps two routes
+> **Since renamed.** It is now `ROUTES.path(pathId)`, at the top level beside
+> `ROUTES.paths` and `ROUTES.about`: `app` means the dashboard shell, and this
+> route is public. The URL is identical — see
+> [`tracks-catalog-feature.md`](./tracks-catalog-feature.md) §7.
+
+### The consequence: the marketing shell now wraps more than one route
 
 The header and footer navigation were bare anchors — `#paths`, `#about` — which
 worked while `/` was the only page in the shell. On this page they scroll
-nowhere. They are now root-relative (`/#paths`), which behaves identically on
-`/` and navigates home-then-scrolls from anywhere else.
-`constants/marketing.ts` had predicted exactly this ("when `/about` and the
-public catalog land, the `href`s change here"). The hero's own `#paths` button
-is untouched — the hero only ever renders on `/`.
+nowhere. They were first made root-relative (`/#paths`), and then, once
+[`/paths`](./tracks-catalog-feature.md) and [`/about`](./about-page.md) landed,
+two of the four became real routes. `constants/marketing.ts` had predicted
+exactly this ("when `/about` and the public catalog land, the `href`s change
+here"). The hero's own `#paths` anchor became `/paths` for the same reason.
+
+**This page's back link now points at `/paths`**, the catalog, rather than at
+the landing page's section.
 
 ---
 
@@ -126,7 +134,9 @@ one calls `authService.getCurrentUser()`, which returns `null` rather than
 throwing.
 
 It is a **separate segment** from `GET /api/paths/:pathId` rather than a branch
-inside it, for the reason `/api/paths/published` is separate from `/api/paths`:
+inside it, for the reason `/api/paths/published` (the catalog —
+[`tracks-catalog-feature.md`](./tracks-catalog-feature.md)) is separate from
+`/api/paths`:
 the sibling above is admin-only and returns editorial state, and *a handler that
 sometimes checks a session is a handler that eventually stops checking*. Two
 files, two guards, two response shapes — neither can quietly become the other.

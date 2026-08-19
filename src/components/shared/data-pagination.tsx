@@ -19,7 +19,17 @@ type DataPaginationProps = {
 };
 
 /**
- * Pager for admin tables.
+ * The pager, for anything paginated.
+ *
+ * It lives in `components/shared` rather than under `admin/` because the public
+ * catalog at `/paths` needs the identical control, and a second pager would be
+ * a second set of RTL chevrons to get wrong. `components/admin/shared`
+ * re-exports it, so no admin import had to change when it moved — the same
+ * route `PageHeader` and `SearchInput` already took.
+ *
+ * Domain-neutral by contract: it takes numbers and a callback, and knows
+ * nothing about what is being paged. `itemLabel` is what lets the summary line
+ * read "12 مسار" on one screen and "30 درس" on another.
  *
  * The chevrons are mirrored for RTL on purpose: in Arabic, "previous" points
  * right and "next" points left.

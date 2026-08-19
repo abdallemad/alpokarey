@@ -1,4 +1,3 @@
-export { DataPagination } from "./data-pagination";
 export { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 export { SectionCard } from "./section-card";
 export {
@@ -18,6 +17,7 @@ export {
 export {
   ApiErrorState,
   BrandLockup,
+  DataPagination,
   EmptyState,
   ErrorState,
   PageContainer,

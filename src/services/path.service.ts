@@ -1,6 +1,7 @@
 import type { PathCategory, Status } from "@prisma/client";
 
 import { ConflictError, NotFoundError } from "@/lib/errors";
+import { storage } from "@/lib/storage";
 import { enrollmentRepository } from "@/repositories/enrollment.repository";
 import { lessonProgressRepository } from "@/repositories/lesson-progress.repository";
 import {
@@ -8,6 +9,7 @@ import {
   type PathDetailRow,
   type PathListRow,
   type PathOverviewRow,
+  type PublicPathRow,
 } from "@/repositories/path.repository";
 import type { AppUser } from "@/repositories/user.repository";
 import type { Paginated } from "@/types/api";
@@ -23,10 +25,12 @@ import {
   reconcileProgress,
   toProgressPercent,
 } from "@/utils/progress";
+import { toStorageKey } from "@/utils/upload";
 import type {
   PathCreateValues,
   PathListQuery,
   PathUpdateValues,
+  PublicPathsQuery,
 } from "@/validation/path.schema";
 
 /**
@@ -73,6 +77,29 @@ function toDetail(row: PathDetailRow): PathDetail {
 }
 
 /**
+ * One catalog card. The narrowest shape the product exposes.
+ *
+ * `lessonsCount` is summed here rather than counted in SQL because the stage
+ * rows are already loaded for it, and "how big is this path" is a question the
+ * card asks in one number.
+ */
+function toPublicSummary(row: PublicPathRow): PublicPathSummary {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    imageUrl: row.imageUrl,
+    category: row.category,
+    certificationActivated: row.certificationActivated,
+    stagesCount: row.stages.length,
+    lessonsCount: row.stages.reduce(
+      (total, stage) => total + stage._count.lessons,
+      0,
+    ),
+  };
+}
+
+/**
  * The curriculum outline, with a tick beside anything this viewer has finished.
  *
  * `completed` is empty for a visitor who is not enrolled, which is the whole
@@ -105,41 +132,50 @@ function unwrapFilter<T extends string>(value: T | "all"): T | undefined {
   return value === "all" ? undefined : value;
 }
 
-/**
- * How many paths the public catalog section shows.
- *
- * A landing page is a pitch, not an index: past six cards a visitor is
- * scrolling a list instead of reading an argument. The full catalog is
- * `/paths`, when it exists.
- */
-const PUBLIC_PATHS_LIMIT = 6;
-
 export const pathService = {
   /**
-   * The published catalog, for the public landing page.
+   * The published catalog — `/paths`, and the landing page's teaser.
    *
    * Separate from `listPaths` rather than a `status: "PUBLISHED"` call into
    * it, because the two have different **audiences**, not different filters.
    * `listPaths` is behind `requireAdmin` and returns editorial state; this one
    * is reached with no session at all, so it maps to a deliberately narrower
-   * shape and takes no arguments a caller could use to widen it.
+   * shape.
+   *
+   * It does now take a query, which the earlier "takes no arguments" version
+   * did not. The safety never rested on the absence of parameters: it rests on
+   * `buildPublicWhere` writing `status: "PUBLISHED"` where no caller can reach
+   * it, on both filters being closed enums, and on `pageSize` having a
+   * ceiling. See `docs/tracks-catalog-feature.md` §5.
+   *
+   * One method for the catalog **and** the six-card teaser on `/`, rather than
+   * two: the teaser is the first page of the featured ordering, and a second
+   * code path would be a second answer to "what is published?".
    */
-  async listPublishedPaths(): Promise<PublicPathSummary[]> {
-    const rows = await pathRepository.findPublished(PUBLIC_PATHS_LIMIT);
+  async listPublicPaths(
+    query: PublicPathsQuery,
+  ): Promise<Paginated<PublicPathSummary>> {
+    const { page, pageSize } = query;
 
-    return rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      imageUrl: row.imageUrl,
-      category: row.category,
-      certificationActivated: row.certificationActivated,
-      stagesCount: row.stages.length,
-      lessonsCount: row.stages.reduce(
-        (total, stage) => total + stage._count.lessons,
-        0,
-      ),
-    }));
+    const { rows, total } = await pathRepository.findPublishedMany({
+      search: query.search || undefined,
+      category: unwrapFilter(query.category) as PathCategory | undefined,
+      certificationActivated:
+        query.certification === "all"
+          ? undefined
+          : query.certification === "true",
+      sort: query.sort,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+
+    return {
+      items: rows.map(toPublicSummary),
+      page,
+      pageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    };
   },
 
   /**
@@ -336,6 +372,8 @@ export const pathService = {
       );
     }
 
+    const previousImageKey = toStorageKey(existing.imageUrl);
+
     const row = await pathRepository.update(id, {
       ...(input.title !== undefined && { title: input.title }),
       ...(input.description !== undefined && {
@@ -350,6 +388,17 @@ export const pathService = {
       ...(input.imageUrl !== undefined && { imageUrl: input.imageUrl }),
       ...(input.promoUrl !== undefined && { promoUrl: input.promoUrl }),
     });
+
+    // The cover image was replaced or cleared, and the old object was one this
+    // app stored — so nothing points at it any more. Deleted *after* the write
+    // succeeds: a failed unlink leaves a stray file, while unlinking first
+    // would leave a saved record pointing at a file that is already gone.
+    //
+    // `toStorageKey` returns `null` for an absolute URL, which is what stops
+    // this from trying to delete somebody else's Cloudinary asset.
+    if (previousImageKey && row.imageUrl !== existing.imageUrl) {
+      await storage.remove(previousImageKey);
+    }
 
     return toDetail(row);
   },
@@ -372,6 +421,12 @@ export const pathService = {
       throw new NotFoundError("المسار المطلوب غير موجود");
     }
 
-    return pathRepository.delete(id);
+    const deleted = await pathRepository.delete(id);
+
+    // Same order and the same reasoning as `lessonService.removeAttachment`:
+    // the row is the record that matters, so the file goes after it.
+    await storage.remove(toStorageKey(exists.imageUrl));
+
+    return deleted;
   },
 };

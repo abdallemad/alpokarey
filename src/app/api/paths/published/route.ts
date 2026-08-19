@@ -1,13 +1,17 @@
+import type { NextRequest } from "next/server";
+
 import { handleRouteError, ok } from "@/lib/api-response";
 import { pathService } from "@/services/path.service";
+import { publicPathsQuerySchema } from "@/validation/path.schema";
 
 /**
  * `GET /api/paths/published` — the public catalog.
  *
- * **The only unauthenticated read in the whole API.** Everything else under
- * `/api` is behind `requireAdmin()` or `requireUser()`; this one has to be
- * open, because its caller is a visitor on the landing page who has no account
- * yet — that is the entire point of the page they are on.
+ * **The only unauthenticated read in the whole API that takes a query.**
+ * Everything else under `/api` is behind `requireAdmin()` or `requireUser()`;
+ * this one has to be open, because its callers are the landing page's teaser
+ * and `/paths` itself, both read by visitors who have no account yet — that is
+ * the entire point of the pages they are on.
  *
  * It is a separate route from `GET /api/paths` rather than an unguarded branch
  * inside it. A single handler that sometimes checks a session is a handler that
@@ -15,18 +19,26 @@ import { pathService } from "@/services/path.service";
  * files, different Service methods and different response shapes, so neither
  * can quietly become the other.
  *
- * Three things keep it safe to leave open:
+ * Four things keep it safe to leave open now that it **does** take parameters:
  *
- * - It takes **no parameters**. There is no filter, no page size and no id, so
- *   there is nothing to tamper with.
- * - `pathRepository.findPublished` hard-codes `status: "PUBLISHED"`, so no
- *   caller can reach a draft.
+ * - `pathRepository`'s `buildPublicWhere` hard-codes `status: "PUBLISHED"`, and
+ *   there is no `status` field in the schema for a caller to send.
+ * - Both filters are **closed enums** — a category outside `PathCategory` and a
+ *   `certification` outside the tri-state are 422s, not queries.
+ * - `pageSize` has a ceiling of 24, so the endpoint cannot be asked to dump the
+ *   whole table.
  * - It returns `PublicPathSummary`, which has no editorial state and no
  *   enrolment figures on it.
+ *
+ * See `docs/tracks-catalog-feature.md`.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    return ok(await pathService.listPublishedPaths());
+    const query = publicPathsQuerySchema.parse(
+      Object.fromEntries(request.nextUrl.searchParams),
+    );
+
+    return ok(await pathService.listPublicPaths(query));
   } catch (error) {
     return handleRouteError(error);
   }

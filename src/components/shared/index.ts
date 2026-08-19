@@ -1,6 +1,7 @@
 export { AccountMenu } from "./account-menu";
 export { ApiErrorState } from "./api-error-state";
 export { BrandLockup } from "./brand-lockup";
+export { DataPagination } from "./data-pagination";
 export { EmptyState } from "./empty-state";
 export { ErrorState } from "./error-state";
 export { PageContainer } from "./page-container";

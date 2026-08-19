@@ -54,6 +54,92 @@ const detailSelect = {
 } satisfies Prisma.PathSelect;
 
 /**
+ * A published path as a **card in the public catalog**.
+ *
+ * `stages.select._count.lessons` rather than `listSelect`'s enrolment count: a
+ * card says how much there is to study, and an enrolment total on a
+ * newly-launched path is a number better left unsaid.
+ *
+ * Shared by the landing page's six-card teaser and the browsable catalog, so
+ * the same path cannot describe itself differently on the two screens it
+ * appears on.
+ */
+const publicSelect = {
+  id: true,
+  title: true,
+  description: true,
+  imageUrl: true,
+  category: true,
+  certificationActivated: true,
+  stages: { select: { _count: { select: { lessons: true } } } },
+} satisfies Prisma.PathSelect;
+
+export type PublicPathRow = Prisma.PathGetPayload<{
+  select: typeof publicSelect;
+}>;
+
+export type PublicPathSortOption = "featured" | "newest" | "title";
+
+export type PublicPathListOptions = {
+  search?: string;
+  category?: PathCategory;
+  /** `undefined` means "no filter" — a path with or without a certificate. */
+  certificationActivated?: boolean;
+  sort: PublicPathSortOption;
+  skip: number;
+  take: number;
+};
+
+/**
+ * The `where` every public read is built on.
+ *
+ * **`status: "PUBLISHED"` is not a parameter.** It is written here, once, and
+ * no caller can pass it, override it or widen it — which is the whole reason
+ * the public endpoint can safely accept a query string at all. A status the
+ * caller could choose is a status the caller could set to `DRAFT`, publishing
+ * every half-written path in the academy.
+ */
+function buildPublicWhere(
+  filters: Pick<
+    PublicPathListOptions,
+    "search" | "category" | "certificationActivated"
+  >,
+): Prisma.PathWhereInput {
+  const where: Prisma.PathWhereInput = { status: "PUBLISHED" };
+
+  if (filters.search) {
+    where.OR = [
+      { title: { contains: filters.search, mode: "insensitive" } },
+      { description: { contains: filters.search, mode: "insensitive" } },
+    ];
+  }
+
+  if (filters.category) where.category = filters.category;
+
+  if (filters.certificationActivated !== undefined) {
+    where.certificationActivated = filters.certificationActivated;
+  }
+
+  return where;
+}
+
+function buildPublicOrderBy(
+  sort: PublicPathSortOption,
+): Prisma.PathOrderByWithRelationInput[] {
+  switch (sort) {
+    case "newest":
+      return [{ createdAt: "desc" }];
+    case "title":
+      return [{ title: "asc" }];
+    // Featured first, then newest. `isFeatured` is the admin's own "show this
+    // one" switch, and the catalog is the place it should finally mean
+    // something.
+    default:
+      return [{ isFeatured: "desc" }, { createdAt: "desc" }];
+  }
+}
+
+/**
  * One published path as the **public detail page** shows it — the curriculum
  * outline, and nothing a visitor has not earned.
  *
@@ -161,43 +247,39 @@ export const pathRepository = {
   },
 
   /**
-   * The published catalog — what the public landing page may show.
+   * One page of the published catalog, plus the total matching the same
+   * filters — the read behind `/paths`.
    *
-   * `status: "PUBLISHED"` is baked into the query rather than passed in as a
-   * filter. This read is reached through an **unauthenticated** endpoint, and a
-   * status the caller could choose is a status the caller could set to `DRAFT`
-   * — publishing every half-written path in the academy. The one query the
-   * public can trigger cannot be talked into returning drafts.
+   * The page query and its `count` run against the **same `where`** in one
+   * `Promise.all`, so the total can never describe a different set of paths
+   * from the cards under it.
    *
-   * `stages.select._count.lessons` rather than `listSelect`'s enrollment count:
-   * a card says how much there is to study, and an enrolment total on a
-   * newly-launched path is a number better left unsaid.
+   * Filters are optional and additive; the one thing that is neither is
+   * `status`, which `buildPublicWhere` writes and nobody passes.
    */
-  findPublished(take: number) {
-    return db.path.findMany({
-      where: { status: "PUBLISHED" },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        imageUrl: true,
-        category: true,
-        certificationActivated: true,
-        stages: { select: { _count: { select: { lessons: true } } } },
-      },
-      // Featured first, then newest. `isFeatured` is the admin's own "show this
-      // one" switch, and the catalog is the place it should finally mean
-      // something.
-      orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }],
-      take,
-    });
+  async findPublishedMany(options: PublicPathListOptions) {
+    const { sort, skip, take, ...filters } = options;
+    const where = buildPublicWhere(filters);
+
+    const [rows, total] = await Promise.all([
+      db.path.findMany({
+        where,
+        select: publicSelect,
+        orderBy: buildPublicOrderBy(sort),
+        skip,
+        take,
+      }),
+      db.path.count({ where }),
+    ]);
+
+    return { rows, total };
   },
 
   /**
    * One path with its curriculum outline, for `/paths/:pathId`.
    *
    * `findUnique` on the id alone, with no `status` in the `where`: unlike
-   * `findPublished`, this read has a caller who may legitimately be enrolled in
+   * `findPublishedMany`, this read has a caller who may legitimately be enrolled in
    * an unpublished path, and refusing in SQL would hide their own course from
    * them. The status is returned instead, and `pathService.getPathOverview`
    * decides what it means for the person asking.
