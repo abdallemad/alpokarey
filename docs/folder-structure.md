@@ -7,8 +7,9 @@
 - [`tech-stack.md`](./tech-stack.md) — Next.js (App Router), Clerk auth, shadcn/ui, TanStack React Query, Axios, Prisma ORM, PostgreSQL
 - [`storefront-layout.md`](./storefront-layout.md) — the two learner-facing shells (`(marketing)` header, `(app)` sidebar), the shared brand lockup, the database-driven nav, the account menu
 - [`student-dashboard.md`](./student-dashboard.md) — the `(app)` shell as built, and `/dashboard`: progress, the resume card, attempts and certificates
-- [`landing-page.md`](./landing-page.md) — `/` and `/about`, the public marketing routes
-- [`tracks-catalog-feature.md`](./tracks-catalog-feature.md) — `/paths`, the public catalog of learning tracks and its category/audience facets
+- [`landing-page.md`](./landing-page.md) — `/`, the landing page. **Never written** — cited from eight files but absent from the tree and from git history; see [`about-page.md`](./about-page.md) §7
+- [`about-page.md`](./about-page.md) — `/about`, the academy in its own words, and what from the business analysis is deliberately not on it
+- [`tracks-catalog-feature.md`](./tracks-catalog-feature.md) — `/paths`, the public catalog: search, category and certificate filters, sorting and pagination. (Audience is not a facet — the schema has no such column; see its §10)
 - [`path-detail-feature.md`](./path-detail-feature.md) — `/paths/[pathId]`, the public path page: the curriculum outline, the viewer-aware read, and the enrollment call-to-action
 - [`learning-feature.md`](./learning-feature.md) — `/learn/[pathId]/[lessonId]`, the player: video/text content, attachments, and progress tracking
 - [`quiz-feature.md`](./quiz-feature.md) — `/learn/[pathId]/quiz/[quizId]`, question flow, attempts, and pass/fail scoring
@@ -98,11 +99,13 @@ Next.js App Router.
 ```text
 app/
 │
-├── (marketing)/            # header only — see storefront-layout.md
+├── (marketing)/            # header + footer — the public site
 │   ├── layout.tsx
-│   ├── page.tsx             #   /       — landing-page.md
-│   ├── about/                #   /about  — landing-page.md
+│   ├── page.tsx             #   /        — the landing page
+│   ├── about/                #   /about   — about-page.md
 │   └── paths/
+│       ├── page.tsx           #   /paths   — tracks-catalog-feature.md
+│       │                      #     the catalog: search, filters, pagination
 │       └── [pathId]/          #   /paths/[pathId]  — path-detail-feature.md
 │                              #     public: the pitch, the syllabus, and the
 │                              #     enrol button. Not under /dashboard, because
@@ -138,7 +141,9 @@ app/
 │   ├── paths/
 │   │   ├── route.ts           # GET (list) / POST (create) — admin only
 │   │   ├── published/
-│   │   │   └── route.ts        # GET — the public catalog, no session
+│   │   │   └── route.ts        # GET — the public catalog, no session; takes
+│   │   │                       #   search/category/certification/sort/page.
+│   │   │                       #   tracks-catalog-feature.md
 │   │   └── [pathId]/
 │   │       ├── route.ts        # GET (one) / PATCH / DELETE — admin only
 │   │       ├── overview/
@@ -230,7 +235,8 @@ components/
 │
 ├── marketing/     # the public shell and the landing page's sections
 │
-├── paths/         # the public path page — path-detail-feature.md
+├── paths/         # the public catalog and path page —
+│                  #   tracks-catalog-feature.md, path-detail-feature.md
 │
 ├── enrollment/    # EnrollButton — enrollment-feature.md
 │
@@ -270,6 +276,7 @@ shared/
 ├── account-menu.tsx        # avatar, profile, sign out — both shells
 ├── api-error-state.tsx     # branches on 401 / 403 / other
 ├── brand-lockup.tsx
+├── data-pagination.tsx     # the pager — admin tables and the public catalog
 ├── empty-state.tsx
 ├── error-state.tsx
 ├── page-container.tsx      # the padded column any page renders into
@@ -292,16 +299,24 @@ import { EmptyState, Pagination } from "@/components/shared"          // learner
 
 ### paths/
 
-The **public** path page — see
+The **public** path surfaces — the catalog and one path in it. See
+[`tracks-catalog-feature.md`](./tracks-catalog-feature.md) and
 [`path-detail-feature.md`](./path-detail-feature.md).
 
 ```text
 paths/
-├── path-overview-view.tsx        # the page body: header, outline, aside card
+├── paths-catalog-view.tsx        # /paths: filters, grid, pager
+├── paths-catalog-skeleton.tsx
+├── public-path-card.tsx          # one card — shared with the landing teaser
+├── path-overview-view.tsx        # /paths/[id]: header, outline, aside card
 ├── path-curriculum-outline.tsx   # stages → lessons, read-only
 ├── path-overview-skeleton.tsx
 └── index.ts
 ```
+
+`PublicPathCard` is rendered by both this folder's catalog and
+`marketing/paths-section.tsx`, from one definition — two copies of a card are
+two descriptions of the same path that will eventually disagree.
 
 `PathCurriculumOutline` is deliberately **not** the player's `CurriculumTree`.
 That one is navigation — every row is a link, for someone already enrolled.
@@ -345,12 +360,14 @@ The player and the quiz runner are separate state machines — see
 ### marketing/
 
 The public shell (`SiteHeader`, `SiteFooter`, the mobile drawer, the auth
-actions) and the landing page's seven sections, each in its own file. Every
-claim they make traces to `constants/marketing.ts`.
+actions), the landing page's seven sections, and `about/` — the five sections of
+`/about`. Every claim they make traces through `constants/marketing.ts` to a
+cited section of `business-analysis.md`.
 
-The nav and footer links are **root-relative** (`/#paths`, not `#paths`): since
-`/paths/[pathId]` joined the shell, an in-page anchor is a link that scrolls
-nowhere for anyone reading a path page.
+Nav and footer entries are either **routes** (`/paths`, `/about`) or
+**root-relative anchors** (`/#audiences`, not `#audiences`): the shell now wraps
+three routes, and a bare anchor is a link that scrolls nowhere for anyone
+reading a path page.
 
 ---
 
@@ -421,6 +438,7 @@ hooks/
 ├── use-paths.ts
 ├── use-path.ts               # admin detail + create/update/delete
 ├── use-path-overview.ts      # the public path page, viewer state included
+├── use-public-paths.ts       # the catalog, and the landing page's teaser
 ├── use-stages.ts
 ├── use-lessons.ts
 ├── use-lesson-progress.ts

@@ -8,6 +8,7 @@ import {
   MARKETING_PATHS,
   type MarketingNavItem,
 } from "@/constants/marketing";
+import { ROUTES } from "@/constants/routes";
 
 /**
  * The public site's footer.
@@ -56,6 +57,18 @@ export function SiteFooter() {
                   {path.title}
                 </li>
               ))}
+              {/* The names above stay unlinked — they are the planned
+                  curriculum of `business-analysis.md` §3.4, and no `Path` row
+                  backs them. The catalog is a real destination, so it is the
+                  one thing in this column that *is* a link. */}
+              <li>
+                <Link
+                  href={ROUTES.paths}
+                  className="text-sm font-medium text-primary transition-colors hover:text-primary/80"
+                >
+                  كل المسارات
+                </Link>
+              </li>
             </ul>
           </div>
 

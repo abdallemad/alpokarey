@@ -80,7 +80,7 @@ export function HeroSection() {
               variant="outline"
               className="h-12 px-7 text-base"
               nativeButton={false}
-              render={<Link href="#paths" />}
+              render={<Link href={ROUTES.paths} />}
             >
               تصفّح المسارات
             </Button>

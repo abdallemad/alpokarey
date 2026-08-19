@@ -45,6 +45,22 @@ export type PublicPathSummary = {
   lessonsCount: number;
 };
 
+/**
+ * The catalog's filter state, mirrored in the URL query string.
+ *
+ * Declared by hand rather than derived from `publicPathsQuerySchema` for the
+ * same reason `PathsQueryState` is: Zod's `coerce` widens `page`'s input to
+ * `unknown`, which makes a poor React Query cache key.
+ */
+export type PublicPathsQueryState = {
+  search: string;
+  category: string;
+  certification: string;
+  sort: string;
+  page: number;
+  pageSize: number;
+};
+
 export type PathStageSummary = {
   id: string;
   title: string;

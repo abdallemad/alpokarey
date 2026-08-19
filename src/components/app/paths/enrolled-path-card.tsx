@@ -91,7 +91,7 @@ export function EnrolledPathCard({ path }: { path: EnrolledPath }) {
             size="sm"
             nativeButton={false}
             className="shrink-0"
-            render={<Link href={ROUTES.app.path(path.id)} />}
+            render={<Link href={ROUTES.path(path.id)} />}
           >
             تفاصيل المسار
             <ArrowLeft />

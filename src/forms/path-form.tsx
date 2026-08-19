@@ -11,6 +11,7 @@ import {
   TextField,
   TextareaField,
 } from "@/forms/form-field";
+import { ImageUploadField } from "@/forms/image-upload-field";
 import { Button } from "@/components/ui/button";
 import {
   PATH_CATEGORY_LABELS,
@@ -55,6 +56,11 @@ export type PathFormProps = {
  *
  * Validation comes from `pathCreateSchema` — the exact schema the API route
  * parses — so the browser and the server can never disagree.
+ *
+ * The cover image is the one field that is not plain text: it uploads the file
+ * as soon as it is chosen and puts the resulting `/uploads/<key>` URL into the
+ * form, so what this form submits is still the same JSON body it always was.
+ * See `forms/image-upload-field.tsx` and `docs/path-cover-images.md`.
  */
 export function PathForm({
   defaultValues,
@@ -146,12 +152,20 @@ export function PathForm({
         />
       </div>
 
-      <TextField
-        id="imageUrl"
-        label="رابط صورة الغلاف"
-        placeholder="https://…"
-        error={errors.imageUrl?.message}
-        {...register("imageUrl")}
+      <Controller
+        control={control}
+        name="imageUrl"
+        render={({ field }) => (
+          <ImageUploadField
+            id="imageUrl"
+            label="صورة الغلاف"
+            value={field.value}
+            onChange={field.onChange}
+            hint="تظهر أعلى بطاقة المسار في كتالوج المسارات وفي صفحة المسار."
+            error={errors.imageUrl?.message}
+            disabled={isPending}
+          />
+        )}
       />
 
       <TextField

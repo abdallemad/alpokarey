@@ -85,11 +85,8 @@ export type LessonsQueryState = {
 };
 
 /** What a successful upload hands back before it becomes an attachment row. */
-export type UploadedFile = {
-  /** Storage-driver object key — what `storage.remove()` takes. */
-  key: string;
-  url: string;
-  name: string;
-  size: number;
-  contentType: string;
-};
+/**
+ * `UploadedFile` used to live here. It moved to `types/upload.ts` when a path's
+ * cover image started going through the same generic upload endpoint — the
+ * shape was never about lessons.
+ */

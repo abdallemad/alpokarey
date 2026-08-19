@@ -157,6 +157,22 @@ from the layout would go stale on the first link click.
 
 ---
 
+### The way back out
+
+`AppSidebar`'s footer carries **العودة إلى الموقع** → `/`, above the account
+menu, exactly as the admin console's sidebar has since it was built.
+
+It is not decoration. A learner inside this shell had no route back to the
+public site at all: the brand lockup at the top of the sidebar goes to
+`/dashboard/home`, and `SiteHeader` — which is where `/paths` and `/about` are
+linked — belongs to the `(marketing)` shell and is not rendered here. Now that
+the public site has real pages beyond the landing one, leaving the dashboard
+without an exit meant the catalog was unreachable from inside the product.
+
+The admin's link sits alone in its footer; this one sits in the same
+`SidebarMenu` as the conditional "لوحة التحكم" admin shortcut, so a learner who
+is also an admin sees two rows rather than two menus.
+
 ## 5. Progress is computed, not read
 
 `Enrollment.progress` is a stored integer, but **nothing in the codebase
@@ -290,11 +306,13 @@ ever return 403.
 ## 9. Placeholders, and links that lead nowhere yet
 
 > **Superseded.** `/paths` is no longer a placeholder — it is the learner's
-> own enrolment list, now at `/dashboard/paths`. The player at `/learn/…`
-> exists, so the "متابعة" buttons resolve. And `ROUTES.app.path(pathId)` →
-> `/paths/:pathId` is now the public path page, so "تفاصيل المسار" resolves
-> too — see [`path-detail-feature.md`](./path-detail-feature.md). Nothing in
-> this section still describes the product; it is kept for the reasoning.
+> own enrolment list, now at `/dashboard/paths`, and the bare `/paths` is the
+> **public catalog** ([`tracks-catalog-feature.md`](./tracks-catalog-feature.md)).
+> The player at `/learn/…` exists, so the "متابعة" buttons resolve. And
+> `ROUTES.path(pathId)` — formerly `ROUTES.app.path` — is now the public path
+> page, so "تفاصيل المسار" resolves too
+> ([`path-detail-feature.md`](./path-detail-feature.md)). Nothing in this
+> section still describes the product; it is kept for the reasoning.
 
 `/paths` renders a page header and an `EmptyState` explaining the catalog is
 being prepared. It exists because every sidebar destination must resolve to a
@@ -305,7 +323,8 @@ The dashboard links to two routes that **do not exist yet**:
 
 - `ROUTES.app.lesson(pathId, lessonId)` → `/learn/[pathId]/[lessonId]` — every
   "متابعة" button and the resume card.
-- `ROUTES.app.path(pathId)` → `/paths/[pathId]` — "تفاصيل المسار".
+- `ROUTES.app.path(pathId)` → `/paths/[pathId]` — "تفاصيل المسار". (Now
+  `ROUTES.path(pathId)`, and it renders.)
 
 Both are centralised in `constants/routes.ts` as functions, so the player and
 the path detail page can land without touching a single component. Until then

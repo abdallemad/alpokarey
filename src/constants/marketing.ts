@@ -48,38 +48,38 @@ export type MarketingNavItem = {
 /**
  * The public navigation, in the order the page tells its story.
  *
- * All four are still sections of `/` rather than routes of their own — one
- * page, four sections. They are written **root-relative** (`/#paths`, not
- * `#paths`) because the marketing shell now wraps more than one route: since
- * `/paths/[pathId]` landed, a bare `#paths` in this header is a link that
- * scrolls nowhere for anyone reading a path page. `/#paths` navigates home and
- * jumps to the section from anywhere, and behaves exactly as before on `/`
- * itself.
+ * Two of the four are now **routes**: `/paths` is the catalog and `/about` is
+ * the academy's own page. The other two are still sections of the landing page,
+ * written root-relative (`/#audiences`, not `#audiences`) because this header
+ * renders on every marketing route — a bare anchor is a link that scrolls
+ * nowhere for anyone reading a path page.
  *
- * When the public catalog gets a page of its own, `/#paths` becomes `/paths`
- * here and the header, the mobile drawer and the footer all follow.
+ * The order is unchanged: what you would study, whether you are invited, how
+ * the study works, who is behind it.
  */
 export const MARKETING_NAV_ITEMS: MarketingNavItem[] = [
-  { href: "/#paths", label: "المسارات" },
+  { href: "/paths", label: "المسارات" },
   { href: "/#audiences", label: "لمن الأكاديمية" },
   { href: "/#methodology", label: "منهجية الدراسة" },
-  { href: "/#about", label: "عن الأكاديمية" },
+  { href: "/about", label: "عن الأكاديمية" },
 ];
 
 /**
  * Where the footer's "الأكاديمية" column points.
  *
- * Every entry is a section that exists on the page. There is no `#supervision`
- * anchor because scholarly supervision is part of the "عن الأكاديمية" section
- * rather than one of its own — a footer link to an id nothing renders is a dead
- * link that happens to scroll to the top instead of 404ing, which is worse.
+ * Every entry resolves to something that exists — a route, or a section on the
+ * landing page. There is no `#supervision` anchor because scholarly supervision
+ * is part of "عن الأكاديمية" rather than a section of its own, and a footer
+ * link to an id nothing renders is a dead link that happens to scroll to the
+ * top instead of 404ing, which is worse.
  *
  * Root-relative for the same reason as `MARKETING_NAV_ITEMS`: the footer
  * renders on every page in the marketing shell, not only on the one that has
  * these sections.
  */
 export const MARKETING_FOOTER_LINKS: MarketingNavItem[] = [
-  { href: "/#about", label: "عن الأكاديمية" },
+  { href: "/about", label: "عن الأكاديمية" },
+  { href: "/paths", label: "المسارات" },
   { href: "/#values", label: "قيمنا" },
   { href: "/#audiences", label: "لمن الأكاديمية" },
   { href: "/#methodology", label: "منهجية الدراسة" },
@@ -358,4 +358,105 @@ export const MARKETING_SUPERVISION_POINTS: string[] = [
   "اللقاءات التفاعلية مع الطلاب",
   "وضع الاختبارات وتصحيحها",
   "الإجابة عن أسئلة الدارسين",
+];
+
+/* -------------------------------------------------------------------------- */
+/*  §4.1–4.3 — the tracks model, for `/about`                                  */
+/* -------------------------------------------------------------------------- */
+
+export type MarketingTrackFamily = {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  /** Track names exactly as §4.2 and §4.3 list them. */
+  tracks: string[];
+};
+
+/**
+ * §4.1 — what the "integrated tracks" system is, in one sentence.
+ *
+ * The system is the academy's actual product decision: not a library of
+ * lectures but a graded route, each track carrying the instrument sciences
+ * (علوم الآلة) and the terminology (المصطلح) that its own level requires.
+ */
+export const ACADEMY_TRACKS_INTRO =
+  "منهجٌ مرنٌ من المسارات يخدم المسلم العام وطالب العلم المتخصص والباحث المتقدم، ويزوّد الدارس في كل مسارٍ بما يناسبه من علوم الآلة وعلوم المصطلح، ليكون البناء العلمي متينًا ومتدرّجًا.";
+
+/**
+ * The two families of tracks named in §4.2 and §4.3.
+ *
+ * Listed as **names only**, with no promise of a date. §1 records the project
+ * in early founding and §6 puts curriculum preparation at phase two, so these
+ * are the declared plan rather than an inventory — the published inventory is
+ * `/paths`, which reads the database.
+ */
+export const ACADEMY_TRACK_FAMILIES: MarketingTrackFamily[] = [
+  {
+    icon: Network,
+    title: "مسارات التكامل المعرفي",
+    description:
+      "تصل السنة بعلوم الآلة التي تُفهم بها: الأصول واللغة والقراءات والسيرة.",
+    tracks: [
+      "السنة وأصول الفقه",
+      "السنة وعلوم اللغة",
+      "السنة وعلم القراءات",
+      "السنة والسيرة والتاريخ",
+    ],
+  },
+  {
+    icon: Rocket,
+    title: "مسارات الحياة المعاصرة",
+    description:
+      "تنزّل السنة على ما يعيشه الناس اليوم: خطابةً واقتصادًا وسياسةً وبحثًا.",
+    tracks: [
+      "السنة وفن الخطابة",
+      "السنة والاقتصاد وفقه البيوع",
+      "السنة والعلوم السياسية",
+      "صناعة الباحث الفائق",
+    ],
+  },
+];
+
+/* -------------------------------------------------------------------------- */
+/*  §6 — the roadmap                                                           */
+/* -------------------------------------------------------------------------- */
+
+export type MarketingRoadmapPhase = {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+};
+
+/**
+ * The four phases of §6, in order.
+ *
+ * Published deliberately. An academy that has not launched cannot claim a
+ * catalog, but it can say exactly what it is doing and in what order — and a
+ * visitor who can see the plan is being told the truth about where the project
+ * stands, which §9 identifies as this project's whole currency.
+ *
+ * **No dates.** §6 gives an order, not a schedule, and inventing one here would
+ * be a promise nobody has made.
+ */
+export const ACADEMY_ROADMAP: MarketingRoadmapPhase[] = [
+  {
+    icon: Rocket,
+    title: "توفير المنصة التقنية",
+    description: "بناء بيئة تعليمية إلكترونية متطورة تحمل المسارات ومتابعة الدارسين.",
+  },
+  {
+    icon: Library,
+    title: "إعداد المواد والمناهج",
+    description: "تطوير محتوى علمي أصيل ومعاصر لكل مسار، مراجَعٍ قبل نشره.",
+  },
+  {
+    icon: GitBranch,
+    title: "وضع منهجية المسارات",
+    description: "تصميم الرحلة التعليمية لكل تخصص: مراحلها وترتيبها واختباراتها.",
+  },
+  {
+    icon: Globe,
+    title: "بناء آلية التسويق",
+    description: "الوصول إلى الطلاب والشركاء حول العالم، بعربيةٍ وبغيرها.",
+  },
 ];

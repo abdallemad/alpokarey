@@ -1,23 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Award, BookOpen, Compass, Layers, Users } from "lucide-react";
+import { ArrowLeft, Compass, Users } from "lucide-react";
 
 import {
   MarketingSection,
   MarketingSectionHeading,
 } from "@/components/marketing/marketing-section";
+import { PublicPathCard, PublicPathCardSkeleton } from "@/components/paths";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { MARKETING_PATHS } from "@/constants/marketing";
 import { PATH_CATEGORY_CLASSES, PATH_CATEGORY_LABELS } from "@/constants/path";
 import { ROUTES } from "@/constants/routes";
-import { usePublishedPaths } from "@/hooks/use-published-paths";
+import { usePublishedPaths } from "@/hooks/use-public-paths";
 import { cn } from "@/lib/utils";
-import type { PublicPathSummary } from "@/types/path";
-import { formatNumber } from "@/utils/format";
 
 /**
  * The paths section — the academy's real catalog, or its plan when there is
@@ -26,7 +24,8 @@ import { formatNumber } from "@/utils/format";
  * ### Two states, one section
  *
  * **Published paths exist** → each is a real card from the database, with its
- * stage and lesson counts, and a "تفاصيل المسار" link to `/paths/:id`.
+ * stage and lesson counts, and a "تفاصيل المسار" link to `/paths/:id`. Below
+ * them, a link to the full catalog at `/paths`.
  *
  * **Nothing is published yet** → the section falls back to the priority paths
  * of `business-analysis.md` §3.4, as *plans*: no detail links, and a note
@@ -40,9 +39,16 @@ import { formatNumber } from "@/utils/format";
  * names a **Blue Ocean** strategy. So even the fallback is the actual plan
  * rather than filler.
  *
+ * ### A teaser, not the catalog
+ *
+ * It shows at most `PUBLIC_PATHS_TEASER_LIMIT` cards — the first page of the
+ * featured ordering, from the very endpoint `/paths` reads. A landing page is a
+ * pitch, not an index: past six cards a visitor is scrolling a list instead of
+ * following an argument. Anyone who wants the list has a link to it.
+ *
  * A Client Component, because the catalog is the one part of this page that
  * changes between deploys. Fetching it here keeps `/` static — see
- * `hooks/use-published-paths.ts`.
+ * `hooks/use-public-paths.ts`.
  *
  * A failed request falls through to the planned list rather than showing an
  * error: a visitor does not need to know an endpoint is down, and the section
@@ -51,8 +57,11 @@ import { formatNumber } from "@/utils/format";
 export function PathsSection() {
   const { data, isPending } = usePublishedPaths();
 
-  const publishedPaths = data ?? [];
+  const publishedPaths = data?.items ?? [];
   const hasPublished = publishedPaths.length > 0;
+  // The endpoint's own count, not the number of cards shown — "استعرض كل
+  // المسارات (١٢)" has to mean the catalog, not this section.
+  const totalPublished = data?.total ?? 0;
 
   return (
     <MarketingSection id="paths">
@@ -69,11 +78,11 @@ export function PathsSection() {
       <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {isPending ? (
           Array.from({ length: 3 }, (_, index) => (
-            <PathCardSkeleton key={index} />
+            <PublicPathCardSkeleton key={index} />
           ))
         ) : hasPublished ? (
           publishedPaths.map((path) => (
-            <PublishedPathCard key={path.id} path={path} />
+            <PublicPathCard key={path.id} path={path} />
           ))
         ) : (
           MARKETING_PATHS.map((path) => (
@@ -104,6 +113,27 @@ export function PathsSection() {
         )}
       </div>
 
+      {/* Only when there is a catalog to browse. Offering "كل المسارات" while
+          the grid is showing planned curricula would send a visitor to an
+          empty page. */}
+      {hasPublished ? (
+        <div className="mt-10 flex justify-center">
+          <Button
+            variant="outline"
+            size="lg"
+            nativeButton={false}
+            render={<Link href={ROUTES.paths} />}
+          >
+            استعرض كل المسارات
+            {totalPublished > publishedPaths.length
+              ? ` (${totalPublished})`
+              : null}
+            {/* Forward points left in RTL — design-system.md §10. */}
+            <ArrowLeft />
+          </Button>
+        </div>
+      ) : null}
+
       {/* Only when there is nothing to enrol in. Once paths are published the
           cards themselves are the call to action, and this note would be
           contradicting the six live courses above it. */}
@@ -124,83 +154,5 @@ export function PathsSection() {
         </div>
       ) : null}
     </MarketingSection>
-  );
-}
-
-/** One published path, as a visitor sees it. */
-function PublishedPathCard({ path }: { path: PublicPathSummary }) {
-  return (
-    <Card className="h-full">
-      <CardContent className="flex h-full flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {path.category ? (
-            <Badge
-              className={cn(
-                "border-transparent",
-                PATH_CATEGORY_CLASSES[path.category],
-              )}
-            >
-              {PATH_CATEGORY_LABELS[path.category]}
-            </Badge>
-          ) : null}
-
-          {path.certificationActivated ? (
-            <Badge className="border-transparent bg-gold/15 text-gold-foreground dark:text-gold">
-              <Award />
-              بشهادة
-            </Badge>
-          ) : null}
-        </div>
-
-        <h3 className="font-heading text-xl font-bold">{path.title}</h3>
-
-        {path.description ? (
-          <p className="line-clamp-3 flex-1 text-sm leading-6 text-muted-foreground">
-            {path.description}
-          </p>
-        ) : (
-          <div className="flex-1" />
-        )}
-
-        <div className="flex items-center gap-4 border-t border-border pt-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <Layers className="size-3.5" />
-            {formatNumber(path.stagesCount)} مرحلة
-          </span>
-          <span className="flex items-center gap-1.5">
-            <BookOpen className="size-3.5" />
-            {formatNumber(path.lessonsCount)} درس
-          </span>
-        </div>
-
-        <Button
-          variant="outline"
-          className="w-full"
-          nativeButton={false}
-          render={<Link href={ROUTES.app.path(path.id)} />}
-        >
-          تفاصيل المسار
-          {/* Forward points left in RTL — design-system.md §10. */}
-          <ArrowLeft />
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
-
-function PathCardSkeleton() {
-  return (
-    <Card className="h-full">
-      <CardContent className="flex h-full flex-col gap-3">
-        <Skeleton className="h-5 w-20 rounded-md" />
-        <Skeleton className="h-6 w-2/3" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-4/5" />
-        <div className="mt-auto space-y-3 border-t border-border pt-3">
-          <Skeleton className="h-3 w-32" />
-          <Skeleton className="h-8 w-full rounded-lg" />
-        </div>
-      </CardContent>
-    </Card>
   );
 }

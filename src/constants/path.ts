@@ -1,5 +1,8 @@
 import type { PathCategory, Status } from "@prisma/client";
 
+import type { PublicPathsQueryState } from "@/types/path";
+import type { PublicPathSort } from "@/validation/path.schema";
+
 /**
  * Display metadata for Path enums.
  *
@@ -46,3 +49,47 @@ export const PATHS_PAGE_SIZE = 10;
  * searchable combobox backed by its own endpoint.
  */
 export const PATH_OPTIONS_LIMIT = 100;
+
+/* -------------------------------------------------------------------------- */
+/*  The public catalog                                                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * How many paths the landing page's teaser section shows.
+ *
+ * A landing page is a pitch, not an index: past six cards a visitor is
+ * scrolling a list instead of reading an argument. The full catalog is
+ * `/paths`, and the teaser links to it.
+ */
+export const PUBLIC_PATHS_TEASER_LIMIT = 6;
+
+/** How many cards a page of `/paths` holds — the 3×3 grid at `lg`. */
+export const PUBLIC_PATHS_PAGE_SIZE = 9;
+
+export const PUBLIC_PATH_SORT_LABELS: Record<PublicPathSort, string> = {
+  featured: "المختارة أولًا",
+  newest: "الأحدث إضافةً",
+  title: "حسب العنوان",
+};
+
+/**
+ * The certificate filter, as a tri-state.
+ *
+ * A query string has no booleans, so `"true"`/`"false"`/`"all"` is the shape
+ * the schema accepts — the same one the admin console's `featured` filter uses.
+ */
+export const PUBLIC_PATH_CERTIFICATION_LABELS: Record<string, string> = {
+  all: "بشهادة أو بدونها",
+  true: "بشهادة معتمدة",
+  false: "بدون شهادة",
+};
+
+/** The query `/paths` falls back to, and what its URL is stripped down to. */
+export const PUBLIC_PATHS_DEFAULT_QUERY: PublicPathsQueryState = {
+  search: "",
+  category: "all",
+  certification: "all",
+  sort: "featured",
+  page: 1,
+  pageSize: PUBLIC_PATHS_PAGE_SIZE,
+};

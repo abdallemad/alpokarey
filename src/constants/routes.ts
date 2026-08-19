@@ -20,6 +20,22 @@ export const ROUTES = {
   signUp: "/sign-up",
 
   /**
+   * The public site beyond the landing page.
+   *
+   * These sit at the top level rather than under `app` because they are not
+   * app screens: they render in the `(marketing)` shell, they are readable with
+   * no session, and `/paths/:id` is where the landing page's catalog cards
+   * point. `app.paths` — `/dashboard/paths` — is a different page for a
+   * different question: *these* are the paths that exist, *that* is the ones
+   * the learner is studying.
+   *
+   * See `docs/tracks-catalog-feature.md` and `docs/about-page.md`.
+   */
+  about: "/about",
+  paths: "/paths",
+  path: (pathId: string) => `/paths/${pathId}`,
+
+  /**
    * The learner-facing app — the `(app)` route group.
    *
    * Every learner screen that renders inside the dashboard shell lives under
@@ -35,6 +51,7 @@ export const ROUTES = {
     /** Not a page — redirects to `home`. Kept so links to the section work. */
     dashboard: "/dashboard",
     home: "/dashboard/home",
+    /** The learner's **own** enrolments — not the public catalog at `paths`. */
     paths: "/dashboard/paths",
     certificates: "/dashboard/certificates",
     /** One issued certificate — where the player sends a learner after it is
@@ -61,7 +78,6 @@ export const ROUTES = {
     lesson: (pathId: string, lessonId: string) =>
       `/learn/${pathId}/lesson/${lessonId}`,
     quiz: (pathId: string, quizId: string) => `/learn/${pathId}/quiz/${quizId}`,
-    path: (pathId: string) => `/paths/${pathId}`,
   },
 
   admin: {
