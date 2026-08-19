@@ -20,6 +20,14 @@ export const queryKeys = {
     details: () => [...queryKeys.paths.all, "detail"] as const,
     detail: (pathId: string) =>
       [...queryKeys.paths.details(), pathId] as const,
+    /**
+     * The public catalog on the landing page.
+     *
+     * Its own key rather than a `list({ status: "PUBLISHED" })`: it comes from
+     * a different endpoint with a different shape, and an admin publishing a
+     * path should invalidate `queryKeys.paths.all`, which still catches it.
+     */
+    published: () => [...queryKeys.paths.all, "published"] as const,
   },
   stages: {
     all: ["stages"] as const,

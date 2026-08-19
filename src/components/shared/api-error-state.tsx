@@ -40,7 +40,7 @@ export function ApiErrorState({ error, title, onRetry }: ApiErrorStateProps) {
         // only admin endpoints ever return it.
         description="انتهت جلستك أو لم تسجّل الدخول بعد. سجّل الدخول للمتابعة."
         action={
-          <Button nativeButton={false} render={<Link href="/sign-in" />}>
+          <Button nativeButton={false} render={<Link href={ROUTES.signIn} />}>
             <LogIn />
             تسجيل الدخول
           </Button>

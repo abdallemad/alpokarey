@@ -7,7 +7,11 @@ import {
   type PathListRow,
 } from "@/repositories/path.repository";
 import type { Paginated } from "@/types/api";
-import type { PathDetail, PathListItem } from "@/types/path";
+import type {
+  PathDetail,
+  PathListItem,
+  PublicPathSummary,
+} from "@/types/path";
 import type {
   PathCreateValues,
   PathListQuery,
@@ -62,7 +66,43 @@ function unwrapFilter<T extends string>(value: T | "all"): T | undefined {
   return value === "all" ? undefined : value;
 }
 
+/**
+ * How many paths the public catalog section shows.
+ *
+ * A landing page is a pitch, not an index: past six cards a visitor is
+ * scrolling a list instead of reading an argument. The full catalog is
+ * `/paths`, when it exists.
+ */
+const PUBLIC_PATHS_LIMIT = 6;
+
 export const pathService = {
+  /**
+   * The published catalog, for the public landing page.
+   *
+   * Separate from `listPaths` rather than a `status: "PUBLISHED"` call into
+   * it, because the two have different **audiences**, not different filters.
+   * `listPaths` is behind `requireAdmin` and returns editorial state; this one
+   * is reached with no session at all, so it maps to a deliberately narrower
+   * shape and takes no arguments a caller could use to widen it.
+   */
+  async listPublishedPaths(): Promise<PublicPathSummary[]> {
+    const rows = await pathRepository.findPublished(PUBLIC_PATHS_LIMIT);
+
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      imageUrl: row.imageUrl,
+      category: row.category,
+      certificationActivated: row.certificationActivated,
+      stagesCount: row.stages.length,
+      lessonsCount: row.stages.reduce(
+        (total, stage) => total + stage._count.lessons,
+        0,
+      ),
+    }));
+  },
+
   async listPaths(query: PathListQuery): Promise<Paginated<PathListItem>> {
     const { page, pageSize } = query;
 

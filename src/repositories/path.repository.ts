@@ -106,6 +106,39 @@ export const pathRepository = {
     return { rows, total };
   },
 
+  /**
+   * The published catalog — what the public landing page may show.
+   *
+   * `status: "PUBLISHED"` is baked into the query rather than passed in as a
+   * filter. This read is reached through an **unauthenticated** endpoint, and a
+   * status the caller could choose is a status the caller could set to `DRAFT`
+   * — publishing every half-written path in the academy. The one query the
+   * public can trigger cannot be talked into returning drafts.
+   *
+   * `stages.select._count.lessons` rather than `listSelect`'s enrollment count:
+   * a card says how much there is to study, and an enrolment total on a
+   * newly-launched path is a number better left unsaid.
+   */
+  findPublished(take: number) {
+    return db.path.findMany({
+      where: { status: "PUBLISHED" },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        imageUrl: true,
+        category: true,
+        certificationActivated: true,
+        stages: { select: { _count: { select: { lessons: true } } } },
+      },
+      // Featured first, then newest. `isFeatured` is the admin's own "show this
+      // one" switch, and the catalog is the place it should finally mean
+      // something.
+      orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }],
+      take,
+    });
+  },
+
   findById(id: string) {
     return db.path.findUnique({ where: { id }, select: detailSelect });
   },

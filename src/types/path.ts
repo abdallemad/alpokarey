@@ -22,6 +22,29 @@ export type PathListItem = {
   updatedAt: string;
 };
 
+/**
+ * A published path as an **anonymous visitor** may see it.
+ *
+ * Deliberately narrower than `PathListItem`. That type carries `status`,
+ * `isFeatured` and `enrollmentsCount` — editorial state and business figures
+ * that belong to the admin console, not to a public page. Declaring the public
+ * shape separately means widening the catalog is a decision someone has to make
+ * here, rather than something that happens by reusing a convenient type.
+ *
+ * See `docs/landing-page.md` §6.
+ */
+export type PublicPathSummary = {
+  id: string;
+  title: string;
+  description: string | null;
+  imageUrl: string | null;
+  category: PathCategory | null;
+  certificationActivated: boolean;
+  stagesCount: number;
+  /** Total lessons across every stage — the honest "size" of a path. */
+  lessonsCount: number;
+};
+
 export type PathStageSummary = {
   id: string;
   title: string;

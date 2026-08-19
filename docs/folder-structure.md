@@ -13,7 +13,9 @@
 - [`learning-feature.md`](./learning-feature.md) — `/learn/[pathId]/[lessonId]`, the player: video/text content, attachments, and progress tracking
 - [`quiz-feature.md`](./quiz-feature.md) — `/learn/[pathId]/quiz/[quizId]`, question flow, attempts, and pass/fail scoring
 - [`enrollment-feature.md`](./enrollment-feature.md) — enroll/unenroll actions and `/account/my-paths`
-- [`certificates-feature.md`](./certificates-feature.md) — issuance rules and `/account/certificates`
+- [`certificates-feature.md`](./certificates-feature.md) — issuance rules, the player's certificate button, and `/dashboard/certificates`
+- [`dashboard-restructure.md`](./dashboard-restructure.md) — why every learner screen moved under `/dashboard/*`, and the redirect at the bare prefix
+- [`learn-layout.md`](./learn-layout.md) — the `(learn)` route group: the player's own shell, with the curriculum as its sidebar
 - [`admin-dashboard.md`](./admin-dashboard.md) — the `/admin` console and its reusable components
 - [`admin-access-control.md`](./admin-access-control.md) — how `/admin` is locked down (Clerk role + middleware + server-side guard)
 - [`dashboard-feature.md`](./dashboard-feature.md) — the `/admin` landing figures (enrollments, completion rates, certificate counts)
@@ -101,19 +103,23 @@ app/
 │   ├── page.tsx             #   /       — landing-page.md
 │   └── about/                #   /about  — landing-page.md
 │
-├── (app)/                  # sidebar only — see student-dashboard.md
-│   ├── layout.tsx
-│   ├── dashboard/            #   /dashboard            — student-dashboard.md
-│   ├── paths/                #   /paths                — tracks-catalog-feature.md
-│   │   └── [pathId]/          #   /paths/[pathId]        — path-detail-feature.md
-│   ├── learn/
-│   │   └── [pathId]/
-│   │       ├── [lessonId]/     #   /learn/[pathId]/[lessonId]      — learning-feature.md
-│   │       └── quiz/
-│   │           └── [quizId]/    #   /learn/[pathId]/quiz/[quizId]  — quiz-feature.md
-│   └── account/
-│       ├── my-paths/          #   /account/my-paths      — enrollment-feature.md
-│       └── certificates/      #   /account/certificates  — certificates-feature.md
+├── (app)/                  # dashboard sidebar — see student-dashboard.md
+│   ├── layout.tsx           #                       and dashboard-restructure.md
+│   └── dashboard/            #   /dashboard            → redirects to home
+│       ├── home/              #   /dashboard/home       — student-dashboard.md
+│       ├── paths/             #   /dashboard/paths      — student-dashboard.md
+│       └── certificates/      #   /dashboard/certificates       — certificates-feature.md
+│           └── [certificateId]/ # /dashboard/certificates/[id]  — certificates-feature.md
+│
+├── (learn)/                 # curriculum sidebar — see learn-layout.md
+│   ├── layout.tsx            #   providers + sidebar width
+│   └── learn/
+│       └── [pathId]/
+│           ├── layout.tsx      #   the player shell
+│           ├── lesson/
+│           │   └── [lessonId]/  #   /learn/[pathId]/lesson/[lessonId]  — learning-feature.md
+│           └── quiz/
+│               └── [quizId]/    #   /learn/[pathId]/quiz/[quizId]      — quiz-feature.md
 │
 ├── (admin)/                 # the dashboard — admin-dashboard.md
 │   └── admin/
@@ -152,8 +158,17 @@ app/
 │   │       ├── route.ts
 │   │       └── attempts/
 │   │           └── route.ts    # POST — submit QuizAttempt + QuizAnswers
-│   ├── certificates/
-│   │   └── route.ts
+│   ├── me/                     # the signed-in learner's own data
+│   │   ├── dashboard/
+│   │   │   └── route.ts        # GET — student-dashboard.md
+│   │   ├── paths/
+│   │   │   └── route.ts        # GET — the learner's enrolments
+│   │   ├── learn/
+│   │   │   └── [pathId]/       # GET — the curriculum, and its lessons/quizzes
+│   │   └── certificates/
+│   │       ├── route.ts        # POST — issue, certificates-feature.md
+│   │       └── [certificateId]/
+│   │           └── route.ts    # GET — one certificate, owner-scoped
 │   ├── users/
 │   │   └── route.ts
 │   └── webhooks/
@@ -171,6 +186,12 @@ Route groups (the parenthesised folders) organise pages without appearing in
 the URL, so each group can own a layout without nesting the URL a level
 deeper. `app/api` is the one top-level folder that is **not** a route group —
 its segments are the real, versionable HTTP contract.
+
+`(app)` and `(learn)` are siblings rather than parent and child because the
+player needs a *different* sidebar, not a different page inside the same one —
+a nested layout can only add to what its parent rendered. Both still sit under
+the real root layout, so moving between them is an ordinary client-side
+navigation. See [`learn-layout.md`](./learn-layout.md).
 
 ### Responsibilities
 
