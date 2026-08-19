@@ -65,7 +65,10 @@ function SheetContent({
             render={
               <Button
                 variant="ghost"
-                className="absolute top-3 right-3"
+                // `end-3`, not `right-3`: physical right is the RTL *start*
+                // edge, which put the close button over the sheet's title.
+                // Same fix as `dialog.tsx` — design-system.md §10.
+                className="absolute top-3 end-3"
                 size="icon-sm"
               />
             }

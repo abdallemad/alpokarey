@@ -75,3 +75,18 @@ export type PathUpdateInput = z.input<typeof pathUpdateSchema>;
 export type PathUpdateValues = z.output<typeof pathUpdateSchema>;
 export type PathListQuery = z.output<typeof pathListQuerySchema>;
 export type PathListQueryInput = z.input<typeof pathListQuerySchema>;
+
+/**
+ * A path id taken from the URL rather than from a body.
+ *
+ * Used by the two learner-facing path endpoints — the public overview read and
+ * the enrolment write — because both are reachable by hand-typed URL, and a
+ * malformed id should fail as a 422 that names the problem rather than as a
+ * 404 that implies the path was deleted.
+ *
+ * The admin routes under `/api/paths/[pathId]` do not use it: they are behind
+ * `requireAdmin()` and their ids come from links the console itself rendered.
+ */
+export const pathIdParamSchema = z.object({
+  pathId: z.uuid("معرّف المسار غير صالح"),
+});

@@ -14,7 +14,7 @@ import { userService } from "@/services/user.service";
  * `services/user.service.ts`.
  */
 export async function GET(request: Request) {
-  const signInUrl = new URL("/sign-in", request.url);
+  const signInUrl = new URL(ROUTES.signIn, request.url);
 
   try {
     const clerkUser = await currentUser();

@@ -9,11 +9,13 @@
 - [`student-dashboard.md`](./student-dashboard.md) — the `(app)` shell as built, and `/dashboard`: progress, the resume card, attempts and certificates
 - [`landing-page.md`](./landing-page.md) — `/` and `/about`, the public marketing routes
 - [`tracks-catalog-feature.md`](./tracks-catalog-feature.md) — `/paths`, the public catalog of learning tracks and its category/audience facets
-- [`path-detail-feature.md`](./path-detail-feature.md) — `/paths/[pathId]`, the curriculum view: stages, lessons, and enrollment call-to-action
+- [`path-detail-feature.md`](./path-detail-feature.md) — `/paths/[pathId]`, the public path page: the curriculum outline, the viewer-aware read, and the enrollment call-to-action
 - [`learning-feature.md`](./learning-feature.md) — `/learn/[pathId]/[lessonId]`, the player: video/text content, attachments, and progress tracking
 - [`quiz-feature.md`](./quiz-feature.md) — `/learn/[pathId]/quiz/[quizId]`, question flow, attempts, and pass/fail scoring
-- [`enrollment-feature.md`](./enrollment-feature.md) — enroll/unenroll actions and `/account/my-paths`
-- [`certificates-feature.md`](./certificates-feature.md) — issuance rules and `/account/certificates`
+- [`enrollment-feature.md`](./enrollment-feature.md) — enrolling in a path, the idempotent write behind it, and the redirect into the first lesson. (Unenrolment is deliberately absent — see its §9; `/account/my-paths` became `/dashboard/paths`.)
+- [`certificates-feature.md`](./certificates-feature.md) — issuance rules, the player's certificate button, and `/dashboard/certificates`
+- [`dashboard-restructure.md`](./dashboard-restructure.md) — why every learner screen moved under `/dashboard/*`, and the redirect at the bare prefix
+- [`learn-layout.md`](./learn-layout.md) — the `(learn)` route group: the player's own shell, with the curriculum as its sidebar
 - [`admin-dashboard.md`](./admin-dashboard.md) — the `/admin` console and its reusable components
 - [`admin-access-control.md`](./admin-access-control.md) — how `/admin` is locked down (Clerk role + middleware + server-side guard)
 - [`dashboard-feature.md`](./dashboard-feature.md) — the `/admin` landing figures (enrollments, completion rates, certificate counts)
@@ -99,21 +101,30 @@ app/
 ├── (marketing)/            # header only — see storefront-layout.md
 │   ├── layout.tsx
 │   ├── page.tsx             #   /       — landing-page.md
-│   └── about/                #   /about  — landing-page.md
+│   ├── about/                #   /about  — landing-page.md
+│   └── paths/
+│       └── [pathId]/          #   /paths/[pathId]  — path-detail-feature.md
+│                              #     public: the pitch, the syllabus, and the
+│                              #     enrol button. Not under /dashboard, because
+│                              #     it renders in the public shell.
 │
-├── (app)/                  # sidebar only — see student-dashboard.md
-│   ├── layout.tsx
-│   ├── dashboard/            #   /dashboard            — student-dashboard.md
-│   ├── paths/                #   /paths                — tracks-catalog-feature.md
-│   │   └── [pathId]/          #   /paths/[pathId]        — path-detail-feature.md
-│   ├── learn/
-│   │   └── [pathId]/
-│   │       ├── [lessonId]/     #   /learn/[pathId]/[lessonId]      — learning-feature.md
-│   │       └── quiz/
-│   │           └── [quizId]/    #   /learn/[pathId]/quiz/[quizId]  — quiz-feature.md
-│   └── account/
-│       ├── my-paths/          #   /account/my-paths      — enrollment-feature.md
-│       └── certificates/      #   /account/certificates  — certificates-feature.md
+├── (app)/                  # dashboard sidebar — see student-dashboard.md
+│   ├── layout.tsx           #                       and dashboard-restructure.md
+│   └── dashboard/            #   /dashboard            → redirects to home
+│       ├── home/              #   /dashboard/home       — student-dashboard.md
+│       ├── paths/             #   /dashboard/paths      — student-dashboard.md
+│       └── certificates/      #   /dashboard/certificates       — certificates-feature.md
+│           └── [certificateId]/ # /dashboard/certificates/[id]  — certificates-feature.md
+│
+├── (learn)/                 # curriculum sidebar — see learn-layout.md
+│   ├── layout.tsx            #   providers + sidebar width
+│   └── learn/
+│       └── [pathId]/
+│           ├── layout.tsx      #   the player shell
+│           ├── lesson/
+│           │   └── [lessonId]/  #   /learn/[pathId]/lesson/[lessonId]  — learning-feature.md
+│           └── quiz/
+│               └── [quizId]/    #   /learn/[pathId]/quiz/[quizId]      — quiz-feature.md
 │
 ├── (admin)/                 # the dashboard — admin-dashboard.md
 │   └── admin/
@@ -125,11 +136,18 @@ app/
 │
 ├── api/                     # the HTTP boundary — reused later by mobile
 │   ├── paths/
-│   │   ├── route.ts           # GET (list) / POST (create)
+│   │   ├── route.ts           # GET (list) / POST (create) — admin only
+│   │   ├── published/
+│   │   │   └── route.ts        # GET — the public catalog, no session
 │   │   └── [pathId]/
-│   │       ├── route.ts        # GET (one) / PATCH / DELETE
+│   │       ├── route.ts        # GET (one) / PATCH / DELETE — admin only
+│   │       ├── overview/
+│   │       │   └── route.ts    # GET — the public path page; session optional,
+│   │       │                   #   carries the viewer's own enrolment state.
+│   │       │                   #   path-detail-feature.md
 │   │       └── enroll/
-│   │           └── route.ts    # POST — create Enrollment
+│   │           └── route.ts    # POST — create Enrollment (no body),
+│   │                           #   enrollment-feature.md
 │   ├── stages/                 # top-level, not nested — see stages-feature.md §8
 │   │   ├── route.ts            # GET (list, grouped by path) / POST (create)
 │   │   └── [stageId]/
@@ -152,8 +170,17 @@ app/
 │   │       ├── route.ts
 │   │       └── attempts/
 │   │           └── route.ts    # POST — submit QuizAttempt + QuizAnswers
-│   ├── certificates/
-│   │   └── route.ts
+│   ├── me/                     # the signed-in learner's own data
+│   │   ├── dashboard/
+│   │   │   └── route.ts        # GET — student-dashboard.md
+│   │   ├── paths/
+│   │   │   └── route.ts        # GET — the learner's enrolments
+│   │   ├── learn/
+│   │   │   └── [pathId]/       # GET — the curriculum, and its lessons/quizzes
+│   │   └── certificates/
+│   │       ├── route.ts        # POST — issue, certificates-feature.md
+│   │       └── [certificateId]/
+│   │           └── route.ts    # GET — one certificate, owner-scoped
 │   ├── users/
 │   │   └── route.ts
 │   └── webhooks/
@@ -171,6 +198,12 @@ Route groups (the parenthesised folders) organise pages without appearing in
 the URL, so each group can own a layout without nesting the URL a level
 deeper. `app/api` is the one top-level folder that is **not** a route group —
 its segments are the real, versionable HTTP contract.
+
+`(app)` and `(learn)` are siblings rather than parent and child because the
+player needs a *different* sidebar, not a different page inside the same one —
+a nested layout can only add to what its parent rendered. Both still sit under
+the real root layout, so moving between them is an ordinary client-side
+navigation. See [`learn-layout.md`](./learn-layout.md).
 
 ### Responsibilities
 
@@ -191,26 +224,25 @@ Reusable UI components.
 ```text
 components/
 │
-├── ui/
+├── ui/            # shadcn/Base UI wrappers
 │
-├── shared/
+├── shared/        # domain-neutral, used by every shell
 │
-├── layout/
+├── marketing/     # the public shell and the landing page's sections
 │
-├── paths/
+├── paths/         # the public path page — path-detail-feature.md
 │
-├── stages/
+├── enrollment/    # EnrollButton — enrollment-feature.md
 │
-├── lessons/
+├── app/           # the learner shells: dashboard/, learn/, paths/, layout/
 │
-├── quizzes/
-│
-├── certificates/
-│
-├── enrollment/
-│
-└── admin/
+└── admin/         # the console, organised by feature
 ```
+
+> The tree above is **what exists**. `paths/` and `enrollment/` are top-level
+> because their two components render in the *public* shell rather than in the
+> dashboard's or the console's; everything learner-facing that renders inside a
+> shell lives under `app/`.
 
 ### ui/
 
@@ -258,48 +290,67 @@ import { EmptyState, Pagination } from "@/components/shared"          // learner
 
 ---
 
-### paths/, stages/, lessons/, quizzes/
+### paths/
 
-The learning-experience surfaces.
+The **public** path page — see
+[`path-detail-feature.md`](./path-detail-feature.md).
 
-`paths/` holds the catalog grid (`PathsView`, `PathCard`) and the filter panel
-`PathFilters` (category, audience, featured).
+```text
+paths/
+├── path-overview-view.tsx        # the page body: header, outline, aside card
+├── path-curriculum-outline.tsx   # stages → lessons, read-only
+├── path-overview-skeleton.tsx
+└── index.ts
+```
 
-`lessons/` holds the lesson player (`LessonPlayer`, `VideoContent`,
-`TextContent`, `AttachmentList`) and the "mark as complete" control that
-drives `LessonProgress`.
+`PathCurriculumOutline` is deliberately **not** the player's `CurriculumTree`.
+That one is navigation — every row is a link, for someone already enrolled.
+This one is a table of contents: nothing is clickable, because for most of its
+audience nothing is open yet, and a link that leads to a refusal is worse than
+no link.
 
-`quizzes/` holds the question flow (`QuizRunner`, `QuestionCard`,
-`OptionList`) and the result screen (`QuizResult`), which reads
-`passingScore` from the quiz to decide pass/fail messaging.
-
-See [`learning-feature.md`](./learning-feature.md) and
-[`quiz-feature.md`](./quiz-feature.md) for why the player and the quiz runner
-are separate state machines.
-
----
-
-### enrollment/ and certificates/
-
-`enrollment/` holds `EnrollButton` — used on both the catalog card and the
-path detail page, so enrolling behaves identically everywhere — and
-`MyPathsView`.
-
-`certificates/` holds `CertificateCard` and the printable certificate
-template. See [`certificates-feature.md`](./certificates-feature.md).
+When the public catalog (`/paths`) lands, its grid and filters belong here too.
 
 ---
 
-### layout/
+### enrollment/
 
-Application layout components.
+`EnrollButton` — the one control that turns a reader into a student. It renders
+one of three things (sign up · enrol · continue) from the `viewer` object the
+server sent, and the redirect that follows lives in `hooks/use-enrollment.ts`
+so the same button can be dropped onto a catalog card later and land in exactly
+the same place. See [`enrollment-feature.md`](./enrollment-feature.md).
 
-Examples:
+---
 
-- Navbar
-- Footer
-- Sidebar
-- Header
+### app/
+
+Everything learner-facing that renders **inside a shell**, grouped by the shell
+or the surface it belongs to:
+
+```text
+app/
+├── layout/       # the dashboard shell: sidebar, header, mobile nav
+├── dashboard/    # /dashboard/home and the certificate screens
+├── paths/        # /dashboard/paths — the learner's own enrolments
+└── learn/        # the player: shell, curriculum sidebar, lesson, quiz
+```
+
+The player and the quiz runner are separate state machines — see
+[`learn-layout.md`](./learn-layout.md) and
+[`certificates-feature.md`](./certificates-feature.md).
+
+---
+
+### marketing/
+
+The public shell (`SiteHeader`, `SiteFooter`, the mobile drawer, the auth
+actions) and the landing page's seven sections, each in its own file. Every
+claim they make traces to `constants/marketing.ts`.
+
+The nav and footer links are **root-relative** (`/#paths`, not `#paths`): since
+`/paths/[pathId]` joined the shell, an in-page anchor is a link that scrolls
+nowhere for anyone reading a path page.
 
 ---
 
@@ -368,13 +419,14 @@ Axios is the **only** thing allowed to talk to `app/api`.
 hooks/
 │
 ├── use-paths.ts
-├── use-path.ts
+├── use-path.ts               # admin detail + create/update/delete
+├── use-path-overview.ts      # the public path page, viewer state included
 ├── use-stages.ts
 ├── use-lessons.ts
 ├── use-lesson-progress.ts
 ├── use-quizzes.ts
 ├── use-quiz-attempt.ts
-├── use-enrollment.ts
+├── use-enrollment.ts         # enrol → invalidate → redirect into the player
 ├── use-certificates.ts
 └── use-users.ts
 ```
@@ -401,13 +453,14 @@ imported by both `forms/` (client-side) and `app/api/**/route.ts`
 ```text
 validation/
 │
-├── path.schema.ts
+├── path.schema.ts          # + pathIdParamSchema, shared by the two
+│                            #   learner-facing path endpoints
 ├── stage.schema.ts
 ├── lesson.schema.ts
 ├── quiz.schema.ts
 ├── question.schema.ts
-├── enrollment.schema.ts
-└── user.schema.ts
+├── certificate.schema.ts
+└── student.schema.ts
 ```
 
 Examples:
@@ -415,6 +468,12 @@ Examples:
 - `pathCreateSchema` / `pathUpdateSchema`
 - `quizAttemptSubmitSchema` (array of `{ questionId, optionId }`)
 - `lessonProgressSchema`
+
+There is no `enrollment.schema.ts`: `POST /api/paths/:pathId/enroll` takes no
+body at all — the path is in the URL and the learner is in the session — so the
+only thing to validate is the id, which `pathIdParamSchema` covers. A schema
+file describing an empty object would be ceremony rather than a contract. See
+[`enrollment-feature.md`](./enrollment-feature.md) §4.
 
 ---
 

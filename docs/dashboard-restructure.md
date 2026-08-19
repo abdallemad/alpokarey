@@ -167,11 +167,14 @@ plus nav), `/dashboard/paths` and `/dashboard/certificates`.
 ## 6. What did *not* change
 
 - **`ROUTES.app.path(pathId)` still points at `/paths/:pathId`.** That is the
-  public catalog's detail page from
-  [`path-detail-feature.md`](./folder-structure.md), which has never been built.
-  It 404s today exactly as it 404ed before this change — moving the learner's
-  *own* path list did not make the public catalog's detail page this feature's
-  business. Known gap, unchanged.
+  public path page — moving the learner's *own* path list did not make it this
+  feature's business.
+
+  > **Since built.** It no longer 404s: `/paths/[pathId]` renders in the
+  > `(marketing)` shell and hosts the enrol button. See
+  > [`path-detail-feature.md`](./path-detail-feature.md). The point stands —
+  > the URL never had to change for it to land, which is what centralising it
+  > in `ROUTES` bought.
 - **The `(app)` layout.** Same sidebar, same header, same cookie-backed open
   state.
 - **Every API route.** `/api/me/dashboard`, `/api/me/paths` and the rest are

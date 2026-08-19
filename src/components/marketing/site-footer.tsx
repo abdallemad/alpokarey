@@ -1,96 +1,105 @@
 import Link from "next/link";
-import { BrandLockup } from "@/components/shared/brand-lockup";
 
+import { MarketingAccountLinks } from "@/components/marketing/marketing-account-links";
+import { BrandLockup } from "@/components/shared";
+import {
+  ACADEMY_VISION,
+  MARKETING_FOOTER_LINKS,
+  MARKETING_PATHS,
+  type MarketingNavItem,
+} from "@/constants/marketing";
+
+/**
+ * The public site's footer.
+ *
+ * Rebuilt around one rule: **no link points at `#`.** The previous footer had
+ * seven dead links — four path names, an FAQ and a contact page that do not
+ * exist — and a dead link in a footer is worse than a missing one, because a
+ * visitor spends a click discovering it leads nowhere.
+ *
+ * What remains is what actually resolves: the sections of this page, whichever
+ * account routes apply to this visitor, and the path names as **text**. The
+ * paths are listed without links on purpose — they are the planned curriculum
+ * from `business-analysis.md` §3.4, and there is no public catalog page to send
+ * anyone to. Naming them is honest; linking them would not be.
+ *
+ * A Server Component apart from the "حسابك" column, which has to know whether
+ * anyone is signed in.
+ */
 export function SiteFooter() {
   return (
-    <footer className="border-t bg-muted/40">
-      <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-        <div className="xl:grid xl:grid-cols-3 xl:gap-8">
-          <div className="space-y-8 xl:col-span-1">
-            <BrandLockup />
-            <p className="text-sm text-muted-foreground leading-6 max-w-xs">
-              مشروع تعليمي إلكتروني يهدف إلى إحياء الاهتمام بالسنة النبوية الشريفة عبر منهج علمي رصين يربط الحديث بمختلف العلوم الشرعية والحياتية.
+    <footer className="border-t border-border bg-muted/40">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+        <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:grid-cols-4">
+          {/* The brand column spans the full width on a phone, where a 50%
+              column would wrap the vision line every three words. */}
+          <div className="col-span-2 space-y-4 sm:col-span-3 lg:col-span-1">
+            <BrandLockup subtitle="لخدمة السنة النبوية" />
+
+            <p className="max-w-xs font-heading text-base font-bold text-primary">
+              {ACADEMY_VISION}
+            </p>
+
+            <p className="max-w-xs text-sm leading-6 text-muted-foreground">
+              مشروع تعليمي إلكتروني لإحياء الاهتمام بالسنة النبوية عبر منهجٍ
+              علمي رصين يربط الحديث بمختلف العلوم الشرعية والحياتية.
             </p>
           </div>
-          <div className="mt-16 grid grid-cols-2 gap-8 xl:col-span-2 xl:mt-0">
-            <div className="md:grid md:grid-cols-2 md:gap-8">
-              <div>
-                <h3 className="text-sm font-semibold leading-6 text-foreground font-heading">
-                  المسارات التعليمية
-                </h3>
-                <ul role="list" className="mt-6 space-y-4">
-                  <li>
-                    <Link href="#" className="text-sm leading-6 text-muted-foreground hover:text-primary transition-colors">
-                      السنة والأسرة
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="#" className="text-sm leading-6 text-muted-foreground hover:text-primary transition-colors">
-                      السنة والاقتصاد
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="#" className="text-sm leading-6 text-muted-foreground hover:text-primary transition-colors">
-                      السنة والطب
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="#" className="text-sm leading-6 text-muted-foreground hover:text-primary transition-colors">
-                      السنة والمجتمع
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-              <div className="mt-10 md:mt-0">
-                <h3 className="text-sm font-semibold leading-6 text-foreground font-heading">
-                  روابط سريعة
-                </h3>
-                <ul role="list" className="mt-6 space-y-4">
-                  <li>
-                    <Link href="#features" className="text-sm leading-6 text-muted-foreground hover:text-primary transition-colors">
-                      المميزات
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="#about" className="text-sm leading-6 text-muted-foreground hover:text-primary transition-colors">
-                      عن الأكاديمية
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/sign-in" className="text-sm leading-6 text-muted-foreground hover:text-primary transition-colors">
-                      تسجيل الدخول
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <div className="md:grid md:grid-cols-2 md:gap-8">
-              <div>
-                <h3 className="text-sm font-semibold leading-6 text-foreground font-heading">
-                  الدعم والمساعدة
-                </h3>
-                <ul role="list" className="mt-6 space-y-4">
-                  <li>
-                    <Link href="#" className="text-sm leading-6 text-muted-foreground hover:text-primary transition-colors">
-                      الأسئلة الشائعة
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="#" className="text-sm leading-6 text-muted-foreground hover:text-primary transition-colors">
-                      تواصل معنا
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-            </div>
+
+          <FooterColumn title="الأكاديمية" links={MARKETING_FOOTER_LINKS} />
+
+          <div>
+            <h3 className="font-heading text-sm font-bold">المسارات</h3>
+            <ul className="mt-4 space-y-3">
+              {MARKETING_PATHS.slice(0, 4).map((path) => (
+                <li key={path.title} className="text-sm text-muted-foreground">
+                  {path.title}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Auth-aware, so the footer cannot offer "إنشاء حساب" to someone
+              the header is already greeting by name. */}
+          <div>
+            <h3 className="font-heading text-sm font-bold">حسابك</h3>
+            <MarketingAccountLinks />
           </div>
         </div>
-        <div className="mt-16 border-t border-border/40 pt-8 sm:mt-20 lg:mt-24">
+
+        <div className="mt-12 border-t border-border/60 pt-8">
           <p className="text-xs leading-5 text-muted-foreground">
-            &copy; {new Date().getFullYear()} أكاديمية الإمام البخاري. جميع الحقوق محفوظة.
+            © {new Date().getFullYear()} أكاديمية الإمام البخاري. جميع الحقوق
+            محفوظة.
           </p>
         </div>
       </div>
     </footer>
+  );
+}
+
+function FooterColumn({
+  title,
+  links,
+}: {
+  title: string;
+  links: MarketingNavItem[];
+}) {
+  return (
+    <div>
+      <h3 className="font-heading text-sm font-bold">{title}</h3>
+      <ul className="mt-4 space-y-3">
+        {links.map((link) => (
+          <li key={link.href}>
+            <Link
+              href={link.href}
+              className="text-sm text-muted-foreground transition-colors hover:text-primary"
+            >
+              {link.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

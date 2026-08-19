@@ -66,7 +66,7 @@ export function AccountMenu({
         <SidebarMenuItem>
           <SidebarMenuButton
             tooltip={{ children: "تسجيل الدخول", side: "inline-end" }}
-            render={<Link href="/sign-in" />}
+            render={<Link href={ROUTES.signIn} />}
           >
             <UserRound />
             <span>تسجيل الدخول</span>

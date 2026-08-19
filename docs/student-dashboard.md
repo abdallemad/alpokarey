@@ -1,14 +1,29 @@
 # Student Dashboard — the learner shell and `/dashboard`
 
 > **Scope:** the `(app)` route group — the shell every learner-facing page
-> renders inside — and `/dashboard`, the page that tells a learner where they
-> are and what to do next. Plus `/account/certificates`, and a placeholder for
-> `/paths`.
+> renders inside — and the page that tells a learner where they are and what to
+> do next. Plus the certificates list, and a placeholder for the path list.
 >
 > Related: [`folder-structure.md`](./folder-structure.md) ·
 > [`admin-dashboard.md`](./admin-dashboard.md) ·
 > [`design-system.md`](./design-system.md) ·
 > [`business-analysis.md`](./business-analysis.md) §4.4
+
+> ### ⚠️ The URLs in this document have moved
+>
+> This document describes the shell and the pages as they were built, and all
+> of that still holds — but every route named below has since changed:
+>
+> | Here | Now |
+> |---|---|
+> | `/dashboard` | `/dashboard/home` |
+> | `/paths` | `/dashboard/paths` |
+> | `/account/certificates` | `/dashboard/certificates` |
+> | `/learn/[pathId]/[lessonId]` | `/learn/[pathId]/lesson/[lessonId]`, in its own shell |
+>
+> See [`dashboard-restructure.md`](./dashboard-restructure.md) for the move and
+> why, and [`learn-layout.md`](./learn-layout.md) for the player. §9 and §12
+> below are also partly superseded — noted inline.
 
 ---
 
@@ -274,6 +289,13 @@ ever return 403.
 
 ## 9. Placeholders, and links that lead nowhere yet
 
+> **Superseded.** `/paths` is no longer a placeholder — it is the learner's
+> own enrolment list, now at `/dashboard/paths`. The player at `/learn/…`
+> exists, so the "متابعة" buttons resolve. And `ROUTES.app.path(pathId)` →
+> `/paths/:pathId` is now the public path page, so "تفاصيل المسار" resolves
+> too — see [`path-detail-feature.md`](./path-detail-feature.md). Nothing in
+> this section still describes the product; it is kept for the reasoning.
+
 `/paths` renders a page header and an `EmptyState` explaining the catalog is
 being prepared. It exists because every sidebar destination must resolve to a
 real page — a nav item that 404s makes the shell impossible to review, the same
@@ -361,12 +383,20 @@ the database checks above, but the rendering is not.
 
 ## 12. Known gaps
 
+> **Partly resolved.** Gap 1 is closed: `progressService` now writes
+> `Enrollment.progress` when a lesson is completed. Gap 3 is closed: the player
+> exists. Gap 6 — the certificate level — is still open, and
+> [`certificates-feature.md`](./certificates-feature.md) §9 carries it forward
+> alongside the issuance rules built on top of it. Gaps 2, 4 and 5 stand.
+
 1. **`Enrollment.progress` is never written.** The dashboard computes around
    it, but the column will keep drifting until a lesson-completion endpoint
    maintains it — or it is dropped in favour of the computed value.
-2. **No enrolment flow.** A learner cannot enrol from the app yet; the rows in
-   the database were created elsewhere. `/paths` is the placeholder where that
-   lands.
+2. ~~**No enrolment flow.**~~ **Closed.** A learner enrols from
+   `/paths/:pathId` — `POST /api/paths/:pathId/enroll`, which also names the
+   lesson to open, so the click ends in the player rather than on a page that
+   merely changed a label. See
+   [`enrollment-feature.md`](./enrollment-feature.md).
 3. **The lesson player does not exist**, so every "متابعة" button currently
    404s. See §9.
 4. **`(app)` pages are not guarded server-side**, exactly as `/admin` is not:

@@ -9,6 +9,17 @@ export const ROUTES = {
   home: "/",
 
   /**
+   * Clerk's hosted pages, mounted at `app/sign-in` and `app/sign-up`.
+   *
+   * Added here because the public site links to both from four places — the
+   * header, the mobile drawer, the footer and the hero — and four hard-coded
+   * strings is four places to miss when Clerk's mount point changes. The env
+   * vars `NEXT_PUBLIC_CLERK_SIGN_IN_URL` / `_SIGN_UP_URL` must agree with these.
+   */
+  signIn: "/sign-in",
+  signUp: "/sign-up",
+
+  /**
    * The learner-facing app — the `(app)` route group.
    *
    * Every learner screen that renders inside the dashboard shell lives under
