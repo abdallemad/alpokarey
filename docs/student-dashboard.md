@@ -289,11 +289,12 @@ ever return 403.
 
 ## 9. Placeholders, and links that lead nowhere yet
 
-> **Partly superseded.** `/paths` is no longer a placeholder — it is the
-> learner's own enrolment list, now at `/dashboard/paths`. The player at
-> `/learn/…` exists, so the "متابعة" buttons resolve. What remains true is
-> `ROUTES.app.path(pathId)` → `/paths/:pathId`, the public catalog's detail
-> page, which is still unbuilt.
+> **Superseded.** `/paths` is no longer a placeholder — it is the learner's
+> own enrolment list, now at `/dashboard/paths`. The player at `/learn/…`
+> exists, so the "متابعة" buttons resolve. And `ROUTES.app.path(pathId)` →
+> `/paths/:pathId` is now the public path page, so "تفاصيل المسار" resolves
+> too — see [`path-detail-feature.md`](./path-detail-feature.md). Nothing in
+> this section still describes the product; it is kept for the reasoning.
 
 `/paths` renders a page header and an `EmptyState` explaining the catalog is
 being prepared. It exists because every sidebar destination must resolve to a
@@ -391,9 +392,11 @@ the database checks above, but the rendering is not.
 1. **`Enrollment.progress` is never written.** The dashboard computes around
    it, but the column will keep drifting until a lesson-completion endpoint
    maintains it — or it is dropped in favour of the computed value.
-2. **No enrolment flow.** A learner cannot enrol from the app yet; the rows in
-   the database were created elsewhere. `/paths` is the placeholder where that
-   lands.
+2. ~~**No enrolment flow.**~~ **Closed.** A learner enrols from
+   `/paths/:pathId` — `POST /api/paths/:pathId/enroll`, which also names the
+   lesson to open, so the click ends in the player rather than on a page that
+   merely changed a label. See
+   [`enrollment-feature.md`](./enrollment-feature.md).
 3. **The lesson player does not exist**, so every "متابعة" button currently
    404s. See §9.
 4. **`(app)` pages are not guarded server-side**, exactly as `/admin` is not:

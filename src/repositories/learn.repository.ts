@@ -198,10 +198,19 @@ export const learnRepository = {
     });
   },
 
-  /** Every lesson id in a path, for recomputing how far through it a learner is. */
+  /**
+   * Every lesson id in a path, **in curriculum order**.
+   *
+   * Two callers, one query. The certificate gate only counts these, so order
+   * costs it nothing; enrolment needs the order, because the lesson it sends a
+   * new learner to is simply the first of them — and it has to be the same
+   * "first" the player and the path page show, which is why the sort repeats
+   * `curriculumSelect`'s stage-then-lesson-then-id tie-break exactly.
+   */
   async findLessonIdsByPath(pathId: string): Promise<string[]> {
     const rows = await db.lesson.findMany({
       where: { stage: { pathId } },
+      orderBy: [{ stage: { order: "asc" } }, { order: "asc" }, { id: "asc" }],
       select: { id: true },
     });
 

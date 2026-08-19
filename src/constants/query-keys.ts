@@ -28,6 +28,20 @@ export const queryKeys = {
      * path should invalidate `queryKeys.paths.all`, which still catches it.
      */
     published: () => [...queryKeys.paths.all, "published"] as const,
+    /**
+     * One path as `/paths/:pathId` shows it, viewer state included.
+     *
+     * Keyed apart from `detail(pathId)` because the two are different
+     * documents from different endpoints: `detail` is the admin's record,
+     * behind `requireAdmin`, while this one is the public page and carries the
+     * signed-in learner's own progress. Sharing a key would let an admin
+     * console visit seed the public page's cache with a shape it cannot render.
+     *
+     * Enrolling invalidates it — the button on that page is derived from
+     * `viewer`, and the click has just changed what `viewer` says.
+     */
+    overview: (pathId: string) =>
+      [...queryKeys.paths.all, "overview", pathId] as const,
   },
   stages: {
     all: ["stages"] as const,

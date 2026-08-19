@@ -48,16 +48,22 @@ export type MarketingNavItem = {
 /**
  * The public navigation, in the order the page tells its story.
  *
- * All four are anchors on `/` rather than separate routes, because that is what
- * they currently are: one page, four sections. When `/about` and the public
- * catalog land, the `href`s change here and the header, the mobile drawer and
- * the footer all follow.
+ * All four are still sections of `/` rather than routes of their own — one
+ * page, four sections. They are written **root-relative** (`/#paths`, not
+ * `#paths`) because the marketing shell now wraps more than one route: since
+ * `/paths/[pathId]` landed, a bare `#paths` in this header is a link that
+ * scrolls nowhere for anyone reading a path page. `/#paths` navigates home and
+ * jumps to the section from anywhere, and behaves exactly as before on `/`
+ * itself.
+ *
+ * When the public catalog gets a page of its own, `/#paths` becomes `/paths`
+ * here and the header, the mobile drawer and the footer all follow.
  */
 export const MARKETING_NAV_ITEMS: MarketingNavItem[] = [
-  { href: "#paths", label: "المسارات" },
-  { href: "#audiences", label: "لمن الأكاديمية" },
-  { href: "#methodology", label: "منهجية الدراسة" },
-  { href: "#about", label: "عن الأكاديمية" },
+  { href: "/#paths", label: "المسارات" },
+  { href: "/#audiences", label: "لمن الأكاديمية" },
+  { href: "/#methodology", label: "منهجية الدراسة" },
+  { href: "/#about", label: "عن الأكاديمية" },
 ];
 
 /**
@@ -67,12 +73,16 @@ export const MARKETING_NAV_ITEMS: MarketingNavItem[] = [
  * anchor because scholarly supervision is part of the "عن الأكاديمية" section
  * rather than one of its own — a footer link to an id nothing renders is a dead
  * link that happens to scroll to the top instead of 404ing, which is worse.
+ *
+ * Root-relative for the same reason as `MARKETING_NAV_ITEMS`: the footer
+ * renders on every page in the marketing shell, not only on the one that has
+ * these sections.
  */
 export const MARKETING_FOOTER_LINKS: MarketingNavItem[] = [
-  { href: "#about", label: "عن الأكاديمية" },
-  { href: "#values", label: "قيمنا" },
-  { href: "#audiences", label: "لمن الأكاديمية" },
-  { href: "#methodology", label: "منهجية الدراسة" },
+  { href: "/#about", label: "عن الأكاديمية" },
+  { href: "/#values", label: "قيمنا" },
+  { href: "/#audiences", label: "لمن الأكاديمية" },
+  { href: "/#methodology", label: "منهجية الدراسة" },
 ];
 
 /* -------------------------------------------------------------------------- */
